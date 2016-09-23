@@ -64,18 +64,35 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 
                 <li class="nav-info">
                     <div class="m-t-xs">
-                        <!-- <span class="c-white">Example</span> text. -->
+                        <!-- <span><i class="pe-7s-share graph-choose-icon"></i>Current graph:</span> -->
                         <br/>
-                        <!-- HOW TO REMOVE THIS SECTION -->
-                        <!--<span>
-                            If you don't want to have this section, just remove it from html and in your css replace:
-                            .navigation:before { background-color: #24262d; } with
-                            .navigation:before { background-color: #2a2d35; }
-                            and
-                            .navigation { background-color: #24262d; }</code> with <code>.navigation { background-color: #2a2d35; }
-                        </span>-->
+
+
+                        <button class="btn btn-default btn-block btn-squared" type="button" data-toggle="modal" data-target="#keyspace-modal">
+                            <i class="pe-7s-share graph-choose-icon"></i>{{activeGraph}}
+                        </button>
+
+                        <div id="keyspace-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true" style="display: none;">
+                            <div class="modal-dialog modal-sm">
+                                <div class="modal-content">
+                                    <div class="modal-header text-center">
+                                        <h4 class="modal-title">Choose your graph</h4>
+                                        <small>Some are big some are small</small>
+                                    </div>
+                                    <div class="modal-body">
+                                        <ul class="dd-list">
+                                            <li class="dd-item" v-for="g in graphNames" v-bind:class="{'li-active':graphActive(g)}" @click="engineClient.setActiveGraph(g)"><div class="dd-handle">{{g}}</div></li>
+                                        </ul>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button class="btn btn-default" type="button" data-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </li>
+
             </ul>
         </nav>
     </aside>
@@ -92,6 +109,12 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
 </template>
 
 <style>
+.li-active {
+    background-color: #337ab7;
+}
+.graph-choose-icon: {
+    font-size: 14px;
+}
 </style>
 
 <script>
@@ -101,6 +124,8 @@ export default {
     data() {
         return {
             version: undefined,
+            graphNames: [],
+            activeGraph: undefined,
             engineClient: {}
         }
     },
@@ -110,7 +135,32 @@ export default {
     },
 
     attached() {
-        engineClient.getStatus((r, e) => { this.version=(r == null ? 'error' : r['project.version']) });
+        engineClient.getStatus(this.statusResponse);
+        engineClient.getGraphNames((r, e) => { this.graphNames=(r == null ? ['error'] : r) });
+    },
+
+    methods: {
+        statusResponse(r, e) {
+            if(r == null) {
+                this.version = 'error';
+
+            } else {
+                this.version = r['project.version'];
+                engineClient.setActiveGraph(r['graphdatabase.default-graph-name']);
+
+                // Needed for dynamic updates in DOM
+                this.activeGraph = engineClient.getActiveGraph();
+            }
+        },
+
+        setActiveGraph(activeGraph) {
+            engineClient.setActiveGraph(activeGraph);
+            this.activeGraph = activeGraph;
+        },
+
+        graphActive(name) {
+            return this.activeGraph === name;
+        }
     }
 }
 </script>

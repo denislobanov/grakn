@@ -22,11 +22,20 @@
  * REST API client for MindmapsDB Engine.
  */
 export default class EngineClient {
-    constructor() {
+    constructor(activeGraph) {
         this.requestType = 'GET';
         this.contentType = 'application/json; charset=utf-8';
         this.dataType = 'json';
         this.cache = false;
+        this.activeGraph = activeGraph;
+    }
+
+    getActiveGraph() {
+        return this.activeGraph;
+    }
+
+    setActiveGraph(activeGraph) {
+        this.activeGraph = activeGraph;
     }
 
     // can use queue of pending requests here..
@@ -63,49 +72,58 @@ export default class EngineClient {
      * Query Engine for concepts by type.
      */
     conceptsByType(type, fn) {
-        var request = {
+        this.request({
             url: "/graph/concept/"+type,
             callback: fn
-        }
-
-        this.request(request);
+        });
     }
 
     /**
      * Send graql shell command to engine. Returns a string representing shell output.
      */
     graqlShell(query, fn) {
-        var request = {
+        this.request({
             url: "/shell/match?query="+query,
             callback: fn,
             dataType: "text",
             contentType: "application/text"
-        }
-
-        this.request(request);
+        });
     }
 
     /**
      * Send graql query to Engine, returns an array of HAL objects.
      */
     graqlHAL(query, fn) {
-        var request = {
+        this.request({
             url: "/graph/match?query="+query,
             callback: fn
-        }
-
-        this.request(request);
+        });
     }
 
     /**
      * Get current engine configuration.
      */
     getStatus(fn) {
-        var request = {
-            url: "/status",
+        this.request({
+            url: "/status/config",
             callback: fn
-        }
+        });
+    }
 
-        this.request(request);
+    /**
+     * Get meta ontology type instances.
+     */
+    getMetaTypes(fn) {
+        this.request({
+            url: "/shell/metaTypeInstances",
+            callback: fn
+        });
+    }
+
+    getGraphNames(fn) {
+        this.request({
+            url: "/status/graphs",
+            callback: fn
+        });
     }
 };

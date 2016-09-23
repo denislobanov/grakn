@@ -68,6 +68,7 @@ along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
                             <pre class="language-graql">{{{graqlResponse}}}</pre>
                         </div>
                     </div>
+                </div>
             </div>
         </div>
     </div>
