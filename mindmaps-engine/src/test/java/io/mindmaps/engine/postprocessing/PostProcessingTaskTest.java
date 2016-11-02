@@ -69,11 +69,10 @@ public class PostProcessingTaskTest extends MindmapsEngineTestBase {
     }
 
     @Test
-    public void testRestart() throws Exception {
+    public void testRestart() {
         UUID uuid = taskManager.scheduleTask(new PostProcessingTask(), 0);
         taskManager.stopTask(uuid);
         taskManager.restartTask(uuid);
-        Thread.sleep(100);
-        assertEquals(TaskStatus.RUNNING, taskManager.getTaskState(uuid).getStatus());
+        assertEquals(TaskStatus.SCHEDULED, taskManager.getTaskState(uuid).getStatus());
     }
 }

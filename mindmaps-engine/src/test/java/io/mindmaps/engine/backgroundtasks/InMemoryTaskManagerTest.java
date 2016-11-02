@@ -95,6 +95,7 @@ public class InMemoryTaskManagerTest extends MindmapsEngineTestBase {
     public void testRestart() throws Exception {
         UUID uuid = taskManager.scheduleTask(new TestTask(), 0);
         taskManager.stopTask(uuid);
+        Thread.sleep(100);
         assertEquals(TaskStatus.STOPPED, taskManager.getTaskState(uuid).getStatus());
         taskManager.restartTask(uuid);
         Thread.sleep(100);
