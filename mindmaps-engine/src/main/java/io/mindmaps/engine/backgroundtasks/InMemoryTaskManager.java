@@ -149,6 +149,7 @@ public class InMemoryTaskManager implements TaskManager {
 
         try {
             BackgroundTask task = instantiateTask(state.getName());
+            task.resume(state.getPauseState());
 
             if(state.getRecurring())
                 executeRecurring(uuid, task, state.getDelay(), state.getInterval());
