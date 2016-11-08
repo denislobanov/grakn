@@ -85,7 +85,7 @@ public class GraphTaskManager implements TaskManager {
         queryBuilder.insert(stateVar,
                             var().rel("status-of-task-owner", stateVar)
                                  .rel("status-of-task-value", var().isa("task-status")
-                                                                  .has("task-status-value", state.getStatus().toString()))
+                                                                   .has("task-status-value", state.getStatus().toString()))
                                  .isa("status-of-task"),
                             var().rel("task-executing-hostname-owner", stateVar)
                                  .rel("task-executing-hostname-value", var().isa("executing-hostname")

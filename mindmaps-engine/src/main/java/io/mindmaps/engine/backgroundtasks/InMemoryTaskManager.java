@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
-public class InMemoryTaskManager implements TaskManager {
+public class InMemoryTaskManager extends AbstractTaskManager {
     private static String STATUS_MESSAGE_SCHEDULED = "Task scheduled.";
     private final Logger LOG = LoggerFactory.getLogger(InMemoryTaskManager.class);
     private static InMemoryTaskManager instance = null;
@@ -51,27 +51,6 @@ public class InMemoryTaskManager implements TaskManager {
         if (instance == null)
             instance = new InMemoryTaskManager();
         return instance;
-    }
-
-    public UUID scheduleTask(BackgroundTask task, long delay) {
-        TaskState state = new TaskState(task.getClass().getName())
-                .setRecurring(false)
-                .setDelay(delay);
-
-        UUID uuid = saveNewState(state);
-        executeSingle(uuid, task, delay);
-        return uuid;
-    }
-
-    public UUID scheduleRecurringTask(BackgroundTask task, long delay, long interval) {
-        TaskState state = new TaskState(task.getClass().getName())
-                .setRecurring(true)
-                .setDelay(delay)
-                .setInterval(interval);
-
-        UUID uuid = saveNewState(state);
-        executeRecurring(uuid, task, delay, interval);
-        return uuid;
     }
 
     public TaskManager stopTask(UUID uuid, String requesterName, String message) {
@@ -220,7 +199,7 @@ public class InMemoryTaskManager implements TaskManager {
     /*
     internal methods
      */
-    private UUID saveNewState(TaskState state) {
+    protected UUID saveNewState(TaskState state) {
         state.setStatus(TaskStatus.SCHEDULED)
              .setStatusChangeMessage(STATUS_MESSAGE_SCHEDULED)
              .setStatusChangedBy(InMemoryTaskManager.class.getName())
@@ -236,13 +215,13 @@ public class InMemoryTaskManager implements TaskManager {
         return (BackgroundTask) c.newInstance();
     }
 
-    private void executeSingle(UUID uuid, BackgroundTask task, long delay) {
+    protected void executeSingle(UUID uuid, BackgroundTask task, long delay) {
         ScheduledFuture<BackgroundTask> f = (ScheduledFuture<BackgroundTask>) executorService.schedule(
                 runTask(uuid, task::start), delay, TimeUnit.MILLISECONDS);
         taskStorage.put(uuid, f);
     }
 
-    private void executeRecurring(UUID uuid, BackgroundTask task, long delay, long interval) {
+    protected void executeRecurring(UUID uuid, BackgroundTask task, long delay, long interval) {
         ScheduledFuture<BackgroundTask> f = (ScheduledFuture<BackgroundTask>) executorService.scheduleAtFixedRate(
                 runTask(uuid, task::start), delay, interval, TimeUnit.MILLISECONDS);
         taskStorage.put(uuid, f);
