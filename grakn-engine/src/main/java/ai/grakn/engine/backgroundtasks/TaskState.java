@@ -25,126 +25,133 @@ import java.util.Map;
  * Internal task state model used to keep track of scheduled tasks.
  */
 public class TaskState {
+    /**
+     * Task status, @see TaskStatus.
+     */
     private TaskStatus status;
+    /**
+     * Time when task status was last updated.
+     */
     private Date statusChangeTime;
+    /**
+     * String identifying who last updated task status.
+     */
     private String statusChangedBy;
-    private String statusChangeMessage;
-
+    /**
+     * Name of Class implementing the BackgroundTask interface that should be executed when task is run.
+     */
     private String name;
-    private Date queuedTime;
+    /**
+     * String identifying who created this task.
+     */
     private String creator;
-
+    /**
+     * String identifying which engine instance is executing this task, set when task is scheduled.
+     */
     private String executingHostname;
-    private long delay;
+    /**
+     * When this task should be executed.
+     */
+    private Date runAt;
+    /**
+     * Should this task be run again after it has finished executing successfully.
+     */
     private Boolean recurring;
+    /**
+     * If a task is marked as recurring, this represents the time delay between the next executing of this task.
+     */
     private long interval;
-    private Map<String, Object> pauseState;
+    /**
+     * Used to store any executing failures for the given task.
+     */
     private Throwable failure = null;
+    /**
+     * Used to store custom task state - if the task process wants to persist some of its state it should be serialised
+     * to a string here.
+     */
+    private String custom;
     
-    public TaskState(String name) {
+    TaskState(String name) {
         status = TaskStatus.CREATED;
         this.name = name;
     }
 
-    public TaskState setStatus(TaskStatus status) {
+    public TaskState status(TaskStatus status) {
         this.status = status;
-        statusChangeTime = new Date();
         return this;
     }
 
-    public TaskStatus getStatus() {
+    public TaskStatus status() {
         return status;
     }
 
-    public String getName() {
-        return this.name;
+    public TaskState statusChangeTime(Date statusChangeTime) {
+        this.statusChangeTime = statusChangeTime;
+        return this;
     }
 
-    public Date getStatusChangeTime() {
+    public Date statusChangedAt() {
         return statusChangeTime;
     }
 
-    public TaskState setQueuedTime(Date queuedTime) {
-        this.queuedTime = queuedTime;
-        return this;
-    }
-
-    public Date getQueuedTime() {
-        return queuedTime;
-    }
-
-    public TaskState setExecutingHostname(String hostname) {
-        executingHostname = hostname;
-        return this;
-    }
-
-    public String getExecutingHostname() {
-        return executingHostname;
-    }
-
-    public TaskState setCreator(String creator) {
-        this.creator = creator;
-        return this;
-    }
-
-    public String getCreator() {
-        return creator;
-    }
-
-    public TaskState setStatusChangedBy(String statusChangedBy) {
+    public TaskState statusChangedBy(String statusChangedBy) {
         this.statusChangedBy = statusChangedBy;
         return this;
     }
 
-    public String getStatusChangedBy() {
+    public String statusChangedBy() {
         return statusChangedBy;
     }
 
-    public TaskState setStatusChangeMessage(String message) {
-        statusChangeMessage = message;
+    public String taskClassName() {
+        return this.name;
+    }
+
+    public TaskState creator(String creator) {
+        this.creator = creator;
         return this;
     }
 
-    public String getStatusChangeMessage() {
-        return statusChangeMessage;
+    public String createdBy() {
+        return creator;
     }
 
-    public long getDelay() {
-        return delay;
-    }
-
-    public TaskState setDelay(long delay) {
-        this.delay = delay;
+    public TaskState executingHostname(String hostname) {
+        executingHostname = hostname;
         return this;
     }
 
-    public Boolean getRecurring() {
-        return recurring;
+    public String executingHostname() {
+        return executingHostname;
     }
 
-    public TaskState setRecurring(Boolean recurring) {
+    public TaskState runAt(Date runAt) {
+        this.runAt = runAt;
+        return this;
+    }
+
+    public Date runAt() {
+        return runAt;
+    }
+
+    public TaskState recurring(Boolean recurring) {
         this.recurring = recurring;
         return this;
     }
 
-    public long getInterval() {
-        return interval;
+    public Boolean isRecurring() {
+        return recurring;
     }
 
-    public TaskState setInterval(long interval) {
+    public TaskState interval(long interval) {
         this.interval = interval;
         return this;
     }
 
-    public Map<String, Object> getPauseState() {
-        return pauseState;
+    public long recurringInterval() {
+        return interval;
     }
 
-    public TaskState setPauseState(Map<String, Object> pauseState) {
-        this.pauseState = pauseState;
-        return this;
-    }
-    
     public boolean isFailed() {
     	return this.failure != null;
     }
@@ -156,5 +163,14 @@ public class TaskState {
     public TaskState failure(Throwable failure) {
     	this.failure = failure;
     	return this;
+    }
+
+    public TaskState customState(String custom) {
+        this.custom = custom;
+        return this;
+    }
+
+    public String customState() {
+        return custom;
     }
 }

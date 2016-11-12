@@ -28,10 +28,25 @@ public enum TaskStatus {
      * other instances won't.
      */
     SCHEDULED,
+    /**
+     * Currently executing task.
+     */
     RUNNING,
-//    PAUSED,
+    /**
+     * The task has successfully completed execution.
+     */
     COMPLETED,
+    /**
+     * The task has been stopped on request.
+     */
     STOPPED,
+    /**
+     * The task has failed to execute.
+     */
     FAILED,
+    /**
+     * An external failure has prevented the task from executing successfully - for example the thread has been externally
+     * killed or Engine has crashed.
+     */
     DEAD
 }
