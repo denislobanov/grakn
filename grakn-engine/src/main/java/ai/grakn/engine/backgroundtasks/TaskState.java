@@ -90,7 +90,7 @@ public class TaskState {
         return this;
     }
 
-    public Date statusChangedAt() {
+    public Date statusChangeTime() {
         return statusChangeTime;
     }
 
@@ -112,7 +112,7 @@ public class TaskState {
         return this;
     }
 
-    public String createdBy() {
+    public String creator() {
         return creator;
     }
 
@@ -134,7 +134,7 @@ public class TaskState {
         return runAt;
     }
 
-    public TaskState recurring(Boolean recurring) {
+    public TaskState isRecurring(Boolean recurring) {
         this.recurring = recurring;
         return this;
     }
@@ -148,7 +148,7 @@ public class TaskState {
         return this;
     }
 
-    public long recurringInterval() {
+    public long interval() {
         return interval;
     }
 
@@ -172,5 +172,22 @@ public class TaskState {
 
     public String customState() {
         return custom;
+    }
+
+    public TaskState clone() throws CloneNotSupportedException {
+        TaskState state = (TaskState)super.clone();
+
+        state.status(status)
+             .statusChangeTime(statusChangeTime)
+             .statusChangedBy(statusChangedBy)
+             .creator(creator)
+             .executingHostname(executingHostname)
+             .runAt(runAt)
+             .isRecurring(recurring)
+             .interval(interval)
+             .failure(failure)
+             .customState(custom);
+
+        return state;
     }
 }

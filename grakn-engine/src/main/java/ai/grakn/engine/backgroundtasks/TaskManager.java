@@ -19,7 +19,6 @@
 package ai.grakn.engine.backgroundtasks;
 
 import java.util.Date;
-import java.util.Set;
 
 public interface TaskManager {
     /**
@@ -28,7 +27,7 @@ public interface TaskManager {
      * @param runAt Date when task should run.
      * @return Assigned ID of task scheduled for later execution.
      */
-    String scheduleTask(BackgroundTask task, Date runAt);
+    String scheduleTask(BackgroundTask task, String createdBy, Date runAt);
 
     /**
      * Schedule a task for recurring execution at every @period interval and after an initial @delay.
@@ -37,7 +36,7 @@ public interface TaskManager {
      * @param period Long interval between subsequent calls to @task.start().
      * @return Assigned ID of task scheduled for later execution.
      */
-    String scheduleRecurringTask(BackgroundTask task, Date runAt, long period);
+    String scheduleRecurringTask(BackgroundTask task, String createdBy, Date runAt, long period);
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the
@@ -49,28 +48,8 @@ public interface TaskManager {
     TaskManager stopTask(String id, String requesterName);
 
     /**
-     * Return a full copy of a stored TaskState. This may be the state of a task yet to be scheduled or completed, etc.
-     * The state is only guaranteed to be accurate at the time of copying and may change at a time after that, the returned
-     * TaskState object will not reflect this.
-     * @param id String ID of task.
-     * @return A deep copy of the stored TaskState object.
+     * Return the TaskStorage instance that is used by this class.
+     * @return A TaskStorage instance.
      */
-    TaskState getState(String id);
-
-    /**
-     * Returns a Set of all tasks in the system - this includes Completed, Running, Dead, etc.
-     * @return Set<> of task String's
-     */
-    Set<String> getAllTasks();
-
-    /**
-     * Return a Set of all tasks with a matching @TaskStatus.
-     * Example:
-     *  // Return all tasks which failed to complete execution.
-     *  Set<String> failedTasks = myTaskManager.getTasks(TaskStatus.STOPPED);
-     *
-     * @param taskStatus See TaskStatus enum.
-     * @return Set<> of task String's matching the given @taskStatus.
-     */
-    Set<String> getTasks(TaskStatus taskStatus);
+    TaskStorage storage();
 }

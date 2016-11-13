@@ -19,6 +19,7 @@
 package ai.grakn.engine.backgroundtasks;
 
 import java.util.Date;
+import java.util.Set;
 
 public interface TaskStorage {
     /**
@@ -47,14 +48,14 @@ public interface TaskStorage {
      * @param id ID of task to update, this must not be null.
      * @param status New status of task. This must not be null.
      * @param statusChangeBy String identifying caller, may be null.
-     * @param executingHostName String hostname of engine instance scheduling/executing this task. May be null.
+     * @param executingHostname String hostname of engine instance scheduling/executing this task. May be null.
      * @param failure Throwable to store any exceptions that occurred during executing. May be null.
      * @param custom String to store any custom state. May be null.
      */
     void updateState(String id,
                      TaskStatus status,
                      String statusChangeBy,
-                     String executingHostName,
+                     String executingHostname,
                      Throwable failure,
                      String custom
                      );
@@ -66,4 +67,22 @@ public interface TaskStorage {
      * @return TaskState object or null if no TaskState with this id could be found.
      */
     TaskState getState(String id);
+
+
+    /**
+     * Returns a Set of all tasks in the system - this includes Completed, Running, Dead, etc.
+     * @return Set<String> of task IDs
+     */
+    Set<String> getAllTasks();
+
+    /**
+     * Return a Set of all tasks with a matching @TaskStatus.
+     * Example:
+     *  // Return all tasks which failed to complete execution.
+     *  Set<String> failedTasks = myTaskStorage.getTasks(TaskStatus.STOPPED);
+     *
+     * @param taskStatus See TaskStatus enum.
+     * @return Set<String> of task IDs matching the given @taskStatus.
+     */
+    Set<String> getTasks(TaskStatus taskStatus);
 }

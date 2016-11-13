@@ -24,29 +24,32 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
-public class InMemoryTaskManager extends AbstractTaskManager {
-    private static String STATUS_MESSAGE_SCHEDULED = "Task scheduled.";
-    private final Logger LOG = LoggerFactory.getLogger(InMemoryTaskManager.class);
+import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+public class InMemoryTaskManager implements TaskManager {
+    private static String RUN_ONCE_NAME = "One off task scheduler.";
+    private static String RUN_RECURRING_NAME = "Recurring task scheduler.";
+    private static String EXCEPTION_CATCHER_NAME = "Task Exception Catcher.";
+
     private static InMemoryTaskManager instance = null;
 
-    private Map<UUID, TaskState> taskStateStorage;
-    private Map<UUID, ScheduledFuture<BackgroundTask>> taskStorage;
+    private final Logger LOG = LoggerFactory.getLogger(InMemoryTaskManager.class);
+
+    private Map<String, ScheduledFuture<BackgroundTask>> scheduledFutures;
+    private TaskStorage taskStorage;
 
     private ExecutorService executorService;
     private ScheduledExecutorService schedulingService;
 
     private InMemoryTaskManager() {
-        taskStateStorage = new ConcurrentHashMap<>();
-        taskStorage = new ConcurrentHashMap<>();
+        scheduledFutures = new ConcurrentHashMap<>();
+        taskStorage = InMemoryTaskStorage.getInstance();
 
         ConfigProperties properties = ConfigProperties.getInstance();
-        // One thread is reserved for the supervisor
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
-        //FIXME: get from configz
-//        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::supervisor, 2000, 1000, TimeUnit.MILLISECONDS);
     }
 
     public static synchronized InMemoryTaskManager getInstance() {
@@ -55,154 +58,102 @@ public class InMemoryTaskManager extends AbstractTaskManager {
         return instance;
     }
 
-    public TaskManager stopTask(UUID uuid) {
-        return stopTask(uuid, null, null);
-    }
-/*
-    public TaskManager pauseTask(UUID uuid) {
-        return pauseTask(uuid, null, null);
-    }
+    public String scheduleTask(BackgroundTask task, String createdBy, Date runAt) {
+        String id = taskStorage.newState(task.getClass().getName(), createdBy, runAt, false, 0, null);
 
-    public TaskManager resumeTask(UUID uuid) {
-        return resumeTask(uuid, null, null);
-    }
+        // Schedule task to run.
+        Date now = new Date();
+        long delay = now.getTime() - runAt.getTime();
 
-    public TaskManager restartTask(UUID uuid) {
-        return restartTask(uuid, null, null);
-    }
-*/
-    public TaskState getTaskState(UUID uuid) {
-        return taskStateStorage.get(uuid);
-    }
-
-    public Set<UUID> getAllTasks() {
-        return taskStateStorage.keySet();
-    }
-
-    public Set<UUID> getTasks(TaskStatus taskStatus) {
-        return taskStateStorage.entrySet().stream()
-                .filter(x -> x.getValue().getStatus() == taskStatus)
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
-    }
-
-
-
-
-    protected UUID saveNewState(TaskState state) {
-        state.setStatus(TaskStatus.SCHEDULED)
-             .setStatusChangeMessage(STATUS_MESSAGE_SCHEDULED)
-             .setStatusChangedBy(InMemoryTaskManager.class.getName())
-             .setQueuedTime(new Date());
-
-       UUID uuid = UUID.randomUUID();
-       taskStateStorage.put(uuid, state);
-       return uuid;
-    }
-/*
-    protected UUID updateTaskState(UUID uuid, TaskState state) {
-        taskStateStorage.put(uuid, state);
-        return uuid;
-    }
-*/
-    protected BackgroundTask instantiateTask(String className) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-        Class<?> c = Class.forName(className);
-        return (BackgroundTask) c.newInstance();
-    }
-
-    protected void executeSingle(UUID uuid, BackgroundTask task, long delay) {
         ScheduledFuture<BackgroundTask> f = (ScheduledFuture<BackgroundTask>) schedulingService.schedule(
-                runTask(uuid, task::start, false), delay, TimeUnit.MILLISECONDS);
-        taskStorage.put(uuid, f);
+                runSingleTask(id, task::start), delay, MILLISECONDS);
+
+        scheduledFutures.put(id, f);
+        taskStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null);
+        return id;
     }
 
-    protected void executeRecurring(UUID uuid, BackgroundTask task, long delay, long interval) {
+    public String scheduleRecurringTask(BackgroundTask task, String createdBy, Date runAt, long period) {
+        String id = taskStorage.newState(task.getClass().getName(), createdBy, runAt, true, period, null);
+
+        Date now = new Date();
+        long delay = now.getTime() - runAt.getTime();
+
         ScheduledFuture<BackgroundTask> f = (ScheduledFuture<BackgroundTask>) schedulingService.scheduleAtFixedRate(
-                runTask(uuid, task::start, true), delay, interval, TimeUnit.MILLISECONDS);
-        taskStorage.put(uuid, f);
+                runRecurringTask(id, task::start), delay, period, MILLISECONDS);
+
+        scheduledFutures.put(id, f);
+        taskStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null);
+        return id;
     }
 
-    private Runnable runTask(UUID uuid, Runnable fn, boolean recurrent) {
-    	Runnable exceptionCatcher = () -> {
-    		try {
-    			fn.run();
-            	TaskState state = getTaskState(uuid);
-            	synchronized (state) {
-            		state.setStatus(TaskStatus.COMPLETED);
-            	}    			
-    		}
-            catch (Throwable t) {
-            	TaskState state = getTaskState(uuid);
-            	synchronized (state) {
-	            	state.setStatus(TaskStatus.FAILED);
-	            	state.failure(t);
-            	}
+    public TaskManager stopTask(String id, String requesterName) {
+        // Deep copy of TaskState
+        TaskState state = taskStorage.getState(id);
+        if(state == null)
+            return this;
+
+        ScheduledFuture<BackgroundTask> future = scheduledFutures.get(id);
+        String name = this.getClass().getName();
+
+        synchronized (future) {
+            if(state.status() == SCHEDULED) {
+                future.cancel(true);
+                taskStorage.updateState(id, STOPPED, name,null, null, null);
             }
-    	};
+            else if(state.status() == RUNNING) {
+                try {
+                    future.get().stop();
+                    taskStorage.updateState(id, STOPPED, name, null, null, null);
+                }
+                catch (InterruptedException e) {
+                    taskStorage.updateState(id, DEAD, name, null, null, null);
+                }
+                catch (ExecutionException e) {
+                    taskStorage.updateState(id, FAILED, name, null, e, null);
+                }
+
+            }
+            else {
+                LOG.warn("Task not running - "+id);
+            }
+        }
+
+        return this;
+    }
+
+    public TaskStorage storage() {
+        return taskStorage;
+    }
+
+    private Runnable exceptionCatcher(String id, Runnable fn) {
         return () -> {
-            TaskState state = getTaskState(uuid);
-            synchronized (state) { 
-            	if (state.getStatus() == TaskStatus.SCHEDULED || 
-            		(state.getStatus() == TaskStatus.COMPLETED && recurrent) ) {
-    		        state.setStatus(TaskStatus.RUNNING);		
-    		        executorService.submit(exceptionCatcher);
-            	}
+            try {
+                fn.run();
+                taskStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null);
+            } catch (Throwable t) {
+                taskStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null);
             }
         };
     }
 
-    protected ScheduledFuture<BackgroundTask> getTaskExecutionStatus(UUID uuid) {
-        return taskStorage.get(uuid);
+    private Runnable runSingleTask(String id, Runnable fn) {
+        return () -> {
+            TaskState state = taskStorage.getState(id);
+            if(state.status() == SCHEDULED) {
+                taskStorage.updateState(id, RUNNING, RUN_ONCE_NAME, null, null, null);
+                executorService.submit(exceptionCatcher(id, fn));
+            }
+        };
     }
 
-
-
-
-
-/*
-    private void supervisor() {
-        taskStorage.entrySet().forEach(x -> {
-            // Validity check
-            if(!taskStateStorage.containsKey(x.getKey())) {
-                LOG.error("INTERNAL STATE DESYNCHRONISED: taskStorage("+x.getKey().toString()+") is not present in taskStateStorage! CANCELLING TASK.");
-                x.getValue().cancel(true);
-                taskStorage.remove(x.getKey());
+    private Runnable runRecurringTask(String id, Runnable fn) {
+        return () -> {
+            TaskState state = taskStorage.getState(id);
+            if(state.status() == SCHEDULED || state.status() == COMPLETED) {
+                taskStorage.updateState(id, RUNNING, RUN_RECURRING_NAME, null, null, null);
+                executorService.submit(exceptionCatcher(id, fn));
             }
-
-            // Update state of current tasks
-            else {
-                ScheduledFuture<BackgroundTask> f = x.getValue();
-                TaskState state = taskStateStorage.get(x.getKey());
-
-                if(f.isDone()) {
-                    state.setStatus(TaskStatus.COMPLETED);
-                }
-
-                else if(f.isCancelled()) {
-                    if(state.getStatus() != TaskStatus.STOPPED)
-                        state.setStatus(TaskStatus.DEAD)
-                        .setStatusChangedBy(this.getClass().getName()+" supervisor");
-                }
-
-                taskStateStorage.put(x.getKey(), state);
-            }
-        });
-    } */
-/*
-	@Override
-	public TaskManager pauseTask(UUID uuid, String requesterName, String message) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public TaskManager resumeTask(UUID uuid, String requesterName, String message) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public TaskManager restartTask(UUID uuid, String requesterName, String message) {
-		throw new UnsupportedOperationException();
-	}
-    */
-    
+        };
+    }
 }
