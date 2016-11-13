@@ -97,27 +97,34 @@ public class InMemoryTaskManager implements TaskManager {
         String name = this.getClass().getName();
 
         synchronized (future) {
-            if(state.status() == SCHEDULED) {
+            System.out.println("stopping..");
+            if(state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
+                System.out.println("curretnly scheduled, cancelling");
                 future.cancel(true);
                 taskStorage.updateState(id, STOPPED, name,null, null, null);
             }
             else if(state.status() == RUNNING) {
                 try {
-                    future.get().stop();
+                    System.out.println("currently running, calling stop");
+                    future.get(2000, MILLISECONDS).stop();
                     taskStorage.updateState(id, STOPPED, name, null, null, null);
                 }
-                catch (InterruptedException e) {
+                catch (InterruptedException | TimeoutException e) {
+                    System.out.println(e);
                     taskStorage.updateState(id, DEAD, name, null, null, null);
                 }
                 catch (ExecutionException e) {
+                    System.out.println(e);
                     taskStorage.updateState(id, FAILED, name, null, e, null);
                 }
 
             }
             else {
+                System.out.println("not running");
                 LOG.warn("Task not running - "+id);
             }
         }
+        System.out.println("done");
 
         return this;
     }

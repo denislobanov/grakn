@@ -31,6 +31,7 @@ import mjson.Json;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -98,7 +99,14 @@ public class RESTLoader {
 
     private void startPeriodPostProcessingCheck() {
         long postProcessingDelay = ConfigProperties.getInstance().getPropertyAsLong(ConfigProperties.POSTPROCESSING_DELAY);
-        InMemoryTaskManager.getInstance().scheduleRecurringTask(new PostProcessingTask(), postProcessingDelay, postProcessingDelay);
+
+        Date runAt = new Date();
+        runAt.setTime(runAt.getTime() + postProcessingDelay);
+
+        InMemoryTaskManager.getInstance().scheduleRecurringTask(new PostProcessingTask(),
+                                                                this.getClass().getName(),
+                                                                runAt,
+                                                                postProcessingDelay);
     }
 
     public String getLoaderState() {

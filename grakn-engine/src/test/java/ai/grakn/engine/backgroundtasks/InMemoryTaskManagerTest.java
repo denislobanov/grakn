@@ -70,6 +70,13 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
         taskManager.stopTask(id, this.getClass().getName());
 
         status = taskManager.storage().getState(id).status();
-        assertTrue(status == STOPPED);
+        assertEquals(STOPPED, status);
+    }
+
+    @Test
+    public void testConcurrencyOnStartStop() {
+        for (int i = 0; i < 1000000; i++) {
+            testStopSingle();
+        }
     }
 }

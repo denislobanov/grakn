@@ -24,7 +24,7 @@ import java.util.Map;
 /**
  * Internal task state model used to keep track of scheduled tasks.
  */
-public class TaskState {
+public class TaskState implements Cloneable {
     /**
      * Task status, @see TaskStatus.
      */

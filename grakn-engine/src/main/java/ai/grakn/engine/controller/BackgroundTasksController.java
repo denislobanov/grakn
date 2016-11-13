@@ -21,6 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.TaskStorage;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -37,12 +38,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import java.util.UUID;
 
-import static ai.grakn.util.REST.Request.TASK_PAUSE;
-import static ai.grakn.util.REST.Request.TASK_RESTART;
-import static ai.grakn.util.REST.Request.TASK_RESUME;
-import static ai.grakn.util.REST.Request.TASK_STATUS_PARAMETER;
-import static ai.grakn.util.REST.Request.TASK_STOP;
-import static ai.grakn.util.REST.Request.UUID_PARAMETER;
+import static ai.grakn.util.REST.Request.*;
 import static ai.grakn.util.REST.WebPath.ALL_BACKGROUND_TASKS_URI;
 import static ai.grakn.util.REST.WebPath.BACKGROUND_TASKS_BY_STATUS;
 import static ai.grakn.util.REST.WebPath.BACKGROUND_TASK_STATUS;
@@ -54,17 +50,19 @@ import static spark.Spark.put;
 public class BackgroundTasksController {
     private final Logger LOG = LoggerFactory.getLogger(BackgroundTasksController.class);
     private TaskManager taskManager;
+    private TaskStorage taskStorage;
 
     public BackgroundTasksController() {
         taskManager = InMemoryTaskManager.getInstance();
+        taskStorage = taskManager.storage();
 
         get(ALL_BACKGROUND_TASKS_URI, this::getAllTasks);
         get(BACKGROUND_TASKS_BY_STATUS + TASK_STATUS_PARAMETER, this::getTasks);
-        get(BACKGROUND_TASK_STATUS + UUID_PARAMETER, this::getTask);
-//        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_PAUSE, this::pauseTask);
-//        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_RESUME, this::resumeTask);
-        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_STOP, this::stopTask);
-//        put(BACKGROUND_TASK_STATUS + UUID_PARAMETER + TASK_RESTART, this::restartTask);
+        get(BACKGROUND_TASK_STATUS + ID_PARAMETER, this::getTask);
+//        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_PAUSE, this::pauseTask);
+//        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_RESUME, this::resumeTask);
+        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_STOP, this::stopTask);
+//        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_RESTART, this::restartTask);
     }
 
     @GET
@@ -72,7 +70,7 @@ public class BackgroundTasksController {
     @ApiOperation(value = "Return all known tasks.")
     private String getAllTasks(Request request, Response response) {
         JSONObject result = new JSONObject();
-        taskManager.getAllTasks().forEach(x -> result.put(x.toString(), taskManager.getTaskState(x).getStatus()));
+        taskStorage.getAllTasks().forEach(x -> result.put(x, taskStorage.getState(x).status()));
         response.type("application/json");
         return result.toString();
     }
@@ -87,7 +85,7 @@ public class BackgroundTasksController {
             String status = request.params(TASK_STATUS_PARAMETER);
             TaskStatus taskStatus = TaskStatus.valueOf(status);
 
-            taskManager.getTasks(taskStatus).forEach(result::put);
+            taskStorage.getTasks(taskStatus).forEach(result::put);
             response.type("application/json");
             return result;
         } catch(Exception e) {
@@ -97,13 +95,13 @@ public class BackgroundTasksController {
 
     @GET
     @Path("/task/:uuid")
-    @ApiOperation(value = "Get the state of a specific task by its UUID.", produces = "application/json")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
+    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
         try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
+            String id= request.params(ID_PARAMETER);
             JSONObject result = new JSONObject()
-                    .put("status", taskManager.getTaskState(uuid).getStatus());
+                    .put("status", taskStorage.getState(id).status());
 
             response.type("application/json");
             return result.toString();
@@ -143,11 +141,11 @@ public class BackgroundTasksController {
     @PUT
     @Path("/task/:uuid/stop")
     @ApiOperation(value = "Stop a running or paused task.")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String stopTask(Request request, Response response) {
         try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
-            taskManager.stopTask(uuid, this.getClass().getName(), null);
+            String id = request.params(ID_PARAMETER);
+            taskManager.stopTask(id, this.getClass().getName());
             return "";
         } catch (Exception e) {
             throw new GraknEngineServerException(500, e);
