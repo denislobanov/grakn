@@ -26,6 +26,8 @@ import ai.grakn.engine.backgroundtasks.TestTask;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Date;
+
 import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 //import static ai.grakn.engine.backgroundtasks.TaskStatus.PAUSED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
@@ -42,7 +44,7 @@ public class BackgroundTaskControllerTest extends GraknEngineTestBase {
     @Before
     public void setUp() throws Exception {
         taskManager = InMemoryTaskManager.getInstance();
-        singleTask = taskManager.scheduleTask(new TestTask(), 0).toString();
+        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date());
 
         // Wait for task to finish
         Thread.sleep(1000);

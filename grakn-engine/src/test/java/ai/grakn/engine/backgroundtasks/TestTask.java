@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestTask implements BackgroundTask {
-    private static AtomicInteger runCount = new AtomicInteger(0);
+    private AtomicInteger runCount = new AtomicInteger(0);
 
     public void start() {
         runCount.incrementAndGet();

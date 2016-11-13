@@ -64,7 +64,7 @@ public class TaskState {
     /**
      * Used to store any executing failures for the given task.
      */
-    private Throwable failure = null;
+    private Throwable failure;
     /**
      * Used to store custom task state - if the task process wants to persist some of its state it should be serialised
      * to a string here.
@@ -73,6 +73,7 @@ public class TaskState {
     
     TaskState(String name) {
         status = TaskStatus.CREATED;
+        failure = null;
         this.name = name;
     }
 

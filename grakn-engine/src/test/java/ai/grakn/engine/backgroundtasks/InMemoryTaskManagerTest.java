@@ -22,20 +22,13 @@ import ai.grakn.engine.GraknEngineTestBase;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.Date;
 
-//import static ai.grakn.engine.backgroundtasks.TaskStatus.PAUSED;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
-import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
+import static org.junit.Assert.*;
 
 public class InMemoryTaskManagerTest extends GraknEngineTestBase {
-    private InMemoryTaskManager taskManager;
-    private static long TASK_DELAY = 100000;
+    private TaskManager taskManager;
 
     @Before
     public void setUp() {
@@ -43,91 +36,40 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     }
 
     @Test
-    public void testQueueAndRetrieve() throws Exception {
+    public void testRunSingle() throws Exception {
         TestTask task = new TestTask();
-        int runCount = task.getRunCount();
 
-        UUID uuid = taskManager.scheduleTask(task, 0);
-        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date());
+        // Wait for task to be executed.
+        Thread.sleep(1000);
 
-        // Wait for supervisor thread to mark task as completed
+        assertEquals(COMPLETED, taskManager.storage().getState(id).status());
+    }
+
+    @Test
+    public void testRunRecurring() throws Exception {
+        TestTask task = new TestTask();
+
+        String id = taskManager.scheduleRecurringTask(task, this.getClass().getName(), new Date(), 100);
         Thread.sleep(2000);
 
-        // Check that task has ran
-        assertEquals(TaskStatus.COMPLETED, taskManager.getTaskState(uuid).getStatus());
-        assertTrue(task.getRunCount() > runCount);
+        assertTrue(task.getRunCount() > 1);
+
+        // Stop task..
+        taskManager.stopTask(id, null);
     }
 
     @Test
-    public void testRecurring() throws Exception {
+    public void testStopSingle() {
         TestTask task = new TestTask();
-        UUID uuid = taskManager.scheduleRecurringTask(task, 100, 100);
-        assertNotEquals(TaskStatus.CREATED, taskManager.getTaskState(uuid).getStatus());
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date());
 
-        // Check that task has repeatedly ran
-        Thread.sleep(1100);
-        int runCount = task.getRunCount();
-        System.out.println("task run count: "+Integer.toString(runCount));
-        assertTrue(runCount >= 10);
+        TaskStatus status = taskManager.storage().getState(id).status();
+        assertTrue(status == SCHEDULED || status == RUNNING);
+
+        taskManager.stopTask(id, this.getClass().getName());
+
+        status = taskManager.storage().getState(id).status();
+        assertTrue(status == STOPPED);
     }
-
-    @Test
-    public void testStop() {
-        UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
-        taskManager.stopTask(uuid);
-        assertEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
-    }
-/*
-    @Test
-    public void testPause() {
-        UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
-        taskManager.pauseTask(uuid);
-        assertEquals(PAUSED, taskManager.getTaskState(uuid).getStatus());
-    }
-
-    @Test
-    public void testResume() {
-        UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
-        taskManager.pauseTask(uuid);
-        assertEquals(PAUSED, taskManager.getTaskState(uuid).getStatus());
-        taskManager.resumeTask(uuid);
-        assertEquals(RUNNING, taskManager.getTaskState(uuid).getStatus());
-    }
-
-    @Test
-    public void testRestart() {
-        UUID uuid = taskManager.scheduleTask(new TestTask(), 0);
-        taskManager.stopTask(uuid);
-        assertEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
-
-        taskManager.restartTask(uuid);
-        assertNotEquals(STOPPED, taskManager.getTaskState(uuid).getStatus());
-    }
-*/
-    @Test
-    public void testGetAll() {
-        Set<UUID> uuids = new HashSet<>();
-        for (int i = 0; i < 10; i++) {
-            uuids.add(taskManager.scheduleTask(new TestTask(), TASK_DELAY));
-        }
-
-        // taskManager can now contain completed tasks from other tests
-        Set<UUID> allTasks = taskManager.getAllTasks();
-        uuids.forEach(x -> assertTrue(allTasks.contains(x)));
-    }
-/*
-    @Test
-    public void testGetTasks() {
-        Set<UUID> paused = new HashSet<>();
-        for (int i = 0; i < 10; i++) {
-            UUID uuid = taskManager.scheduleTask(new TestTask(), TASK_DELAY);
-            if(i%2 == 0) {
-                taskManager.pauseTask(uuid);
-                paused.add(uuid);
-            }
-        }
-
-        assertEquals(paused.size(), taskManager.getTasks(PAUSED).size());
-        taskManager.getTasks(PAUSED).forEach(x -> assertTrue(paused.contains(x)));
-    }*/
 }
