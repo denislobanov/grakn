@@ -57,7 +57,8 @@ public interface TaskStorage {
                      String statusChangeBy,
                      String executingHostname,
                      Throwable failure,
-                     String custom
+                     String custom,
+                     long lock
                      );
 
     /**
@@ -67,7 +68,6 @@ public interface TaskStorage {
      * @return TaskState object or null if no TaskState with this id could be found.
      */
     TaskState getState(String id);
-
 
     /**
      * Returns a Set of all tasks in the system - this includes Completed, Running, Dead, etc.
@@ -85,4 +85,6 @@ public interface TaskStorage {
      * @return Set<String> of task IDs matching the given @taskStatus.
      */
     Set<String> getTasks(TaskStatus taskStatus);
+
+    long lockState(String id);
 }

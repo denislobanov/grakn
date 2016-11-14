@@ -24,16 +24,18 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
 
 public class InMemoryTaskStorage implements TaskStorage {
     private static InMemoryTaskStorage instance = null;
 
     private Map<String, TaskState> storage;
-    private Set<String> lockedStates;
+    private StampedLock storageLock;
 
     private InMemoryTaskStorage() {
         storage = new ConcurrentHashMap<>();
+        storageLock = new StampedLock();
     }
 
     public static synchronized InMemoryTaskStorage getInstance() {
@@ -60,9 +62,15 @@ public class InMemoryTaskStorage implements TaskStorage {
     }
 
     public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
-                            Throwable failure, String custom) {
+                            Throwable failure, String custom, long lock) {
         if(id == null || status == null)
             return;
+
+        // Ensure lock exists
+        if(!storageLock.validate(lock)) {
+            System.out.println("update called withouut a valid lock");
+            return;
+        }
 
         TaskState state = storage.get(id);
         synchronized (state) {
@@ -72,6 +80,9 @@ public class InMemoryTaskStorage implements TaskStorage {
                  .failure(failure)
                  .customState(custom);
         }
+
+        // Release lock
+        storageLock.unlock(lock);
     }
 
     public TaskState getState(String id) {
@@ -101,5 +112,9 @@ public class InMemoryTaskStorage implements TaskStorage {
                       .filter(x -> x.getValue().status() == taskStatus)
                       .map(Map.Entry::getKey)
                       .collect(Collectors.toSet());
+    }
+
+    public long lockState(String id) {
+        return storageLock.writeLock();
     }
 }

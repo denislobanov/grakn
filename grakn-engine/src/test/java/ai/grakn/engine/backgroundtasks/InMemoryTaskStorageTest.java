@@ -70,7 +70,8 @@ public class InMemoryTaskStorageTest {
         String custom = state.customState();
 
         // Change.
-        taskStorage.updateState(id, SCHEDULED, "bla", "example.com", new UnsupportedOperationException(), "blabla");
+        long lock = taskStorage.lockState(id);
+        taskStorage.updateState(id, SCHEDULED, "bla", "example.com", new UnsupportedOperationException(), "blabla", lock);
 
         TaskState newState = taskStorage.getState(id);
         assertNotEquals("the object itself", state, newState);

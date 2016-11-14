@@ -71,8 +71,10 @@ public class InMemoryTaskManager implements TaskManager {
                 runSingleTask(id, task::start), delay, MILLISECONDS);
 
         instantiatedTasks.put(id, task);
+
+        long lock = taskStorage.lockState(id);
+        taskStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, lock);
         scheduledFutures.put(id, f);
-        taskStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null);
         return id;
     }
 
@@ -86,13 +88,16 @@ public class InMemoryTaskManager implements TaskManager {
                 runRecurringTask(id, task::start), delay, period, MILLISECONDS);
 
         instantiatedTasks.put(id, task);
+
+        long lock = taskStorage.lockState(id);
+        taskStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, lock);
         scheduledFutures.put(id, f);
-        taskStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null);
         return id;
     }
 
     public TaskManager stopTask(String id, String requesterName) {
-        // Deep copy of TaskState
+        long lock = taskStorage.lockState(id);
+
         TaskState state = taskStorage.getState(id);
         if(state == null)
             return this;
@@ -105,17 +110,17 @@ public class InMemoryTaskManager implements TaskManager {
             if(state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
                 System.out.println("curretnly scheduled, cancelling");
                 future.cancel(true);
-                taskStorage.updateState(id, STOPPED, name,null, null, null);
+                taskStorage.updateState(id, STOPPED, name,null, null, null, lock);
             }
             else if(state.status() == RUNNING) {
                 System.out.println("currently running, calling stop");
 
                 BackgroundTask task = instantiatedTasks.get(id);
-                synchronized (task) {
+                if(task != null) {
                     task.stop();
                 }
 
-                taskStorage.updateState(id, STOPPED, name, null, null, null);
+                taskStorage.updateState(id, STOPPED, name, null, null, null, lock);
             }
             else {
                 System.out.println("not running");
@@ -135,23 +140,25 @@ public class InMemoryTaskManager implements TaskManager {
         return () -> {
             try {
                 fn.run();
-                taskStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null);
+
+                long lock = taskStorage.lockState(id);
+                taskStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null, lock);
             } catch (Throwable t) {
-                taskStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null);
+                long lock = taskStorage.lockState(id);
+                taskStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null, lock);
             } finally {
-                BackgroundTask task = instantiatedTasks.get(id);
-                synchronized (task) {
-                    instantiatedTasks.remove(id);
-                }
+                instantiatedTasks.remove(id);
             }
         };
     }
 
     private Runnable runSingleTask(String id, Runnable fn) {
         return () -> {
+            long lock = taskStorage.lockState(id);
+
             TaskState state = taskStorage.getState(id);
             if(state.status() == SCHEDULED) {
-                taskStorage.updateState(id, RUNNING, RUN_ONCE_NAME, null, null, null);
+                taskStorage.updateState(id, RUNNING, RUN_ONCE_NAME, null, null, null, lock);
                 executorService.submit(exceptionCatcher(id, fn));
             }
         };
@@ -159,9 +166,11 @@ public class InMemoryTaskManager implements TaskManager {
 
     private Runnable runRecurringTask(String id, Runnable fn) {
         return () -> {
+            long lock = taskStorage.lockState(id);
+
             TaskState state = taskStorage.getState(id);
             if(state.status() == SCHEDULED || state.status() == COMPLETED) {
-                taskStorage.updateState(id, RUNNING, RUN_RECURRING_NAME, null, null, null);
+                taskStorage.updateState(id, RUNNING, RUN_RECURRING_NAME, null, null, null, lock);
                 executorService.submit(exceptionCatcher(id, fn));
             }
         };
