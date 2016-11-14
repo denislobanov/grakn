@@ -93,7 +93,7 @@ public class GraknEngineServer {
     }
 
     /**
-     * Check if Mindmamps Engine has been started
+     * Check if Grakn Engine has been started
      * @return true if Grakn Engine running, false otherwise
      */
     public static boolean isRunning(){
