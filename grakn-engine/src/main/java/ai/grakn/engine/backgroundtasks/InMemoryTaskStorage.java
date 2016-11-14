@@ -31,11 +31,9 @@ public class InMemoryTaskStorage implements TaskStorage {
     private static InMemoryTaskStorage instance = null;
 
     private Map<String, TaskState> storage;
-    private StampedLock storageLock;
 
     private InMemoryTaskStorage() {
         storage = new ConcurrentHashMap<>();
-        storageLock = new StampedLock();
     }
 
     public static synchronized InMemoryTaskStorage getInstance() {
@@ -103,13 +101,5 @@ public class InMemoryTaskStorage implements TaskStorage {
                       .filter(x -> x.getValue().status() == taskStatus)
                       .map(Map.Entry::getKey)
                       .collect(Collectors.toSet());
-    }
-
-    public long lockState(String id) {
-        return storageLock.writeLock();
-    }
-
-    public void releaseLock(long lock) {
-        storageLock.unlock(lock);
     }
 }

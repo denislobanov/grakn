@@ -23,6 +23,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static org.junit.Assert.*;
@@ -40,10 +43,24 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
         TestTask task = new TestTask();
 
         String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date());
+
         // Wait for task to be executed.
-        Thread.sleep(1000);
+        TaskStorage storage = taskManager.storage();
+        long initial = new Date().getTime();
+        while ((new Date().getTime())-initial < 3000) {
+            if(storage.getState(id).status() == COMPLETED)
+                break;
+            Thread.sleep(100);
+        }
 
         assertEquals(COMPLETED, taskManager.storage().getState(id).status());
+    }
+
+    @Test
+    public void consecutiveRunSingle() throws Exception {
+        for (int i = 0; i < 100; i++) {
+            testRunSingle();
+        }
     }
 
     @Test
@@ -74,9 +91,19 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     }
 
     @Test
-    public void testConcurrencyOnStartStop() {
-        for (int i = 0; i < 1000000; i++) {
+    public void consecutiveStopStart() {
+        for (int i = 0; i < 100000; i++) {
             testStopSingle();
         }
+    }
+
+    @Test
+    public void concurrentConsecutiveStopStart() throws InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        executorService.submit(this::consecutiveStopStart);
+        executorService.submit(this::consecutiveStopStart);
+
+        executorService.shutdown();
+        executorService.awaitTermination(1, TimeUnit.MINUTES);
     }
 }

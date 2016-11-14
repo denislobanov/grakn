@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -40,6 +41,7 @@ public class InMemoryTaskManager implements TaskManager {
     private Map<String, ScheduledFuture<BackgroundTask>> scheduledFutures;
     private Map<String, BackgroundTask> instantiatedTasks;
     private TaskStorage taskStorage;
+    private ReentrantLock stateUpdateLock;
 
     private ExecutorService executorService;
     private ScheduledExecutorService schedulingService;
@@ -48,6 +50,7 @@ public class InMemoryTaskManager implements TaskManager {
         scheduledFutures = new ConcurrentHashMap<>();
         instantiatedTasks = new ConcurrentHashMap<>();
         taskStorage = InMemoryTaskStorage.getInstance();
+        stateUpdateLock = new ReentrantLock();
 
         ConfigProperties properties = ConfigProperties.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
@@ -94,7 +97,7 @@ public class InMemoryTaskManager implements TaskManager {
     }
 
     public TaskManager stopTask(String id, String requesterName) {
-        long lock = taskStorage.lockState(id);
+        stateUpdateLock.lock();
 
         TaskState state = taskStorage.getState(id);
         if(state == null)
@@ -123,7 +126,7 @@ public class InMemoryTaskManager implements TaskManager {
                 LOG.warn("Task not running - "+id);
             }
         }
-        taskStorage.releaseLock(lock);
+        stateUpdateLock.unlock();
 
         return this;
     }
@@ -137,43 +140,45 @@ public class InMemoryTaskManager implements TaskManager {
             try {
                 fn.run();
 
-                long lock = taskStorage.lockState(id);
+                stateUpdateLock.lock();
                 if(taskStorage.getState(id).status() == RUNNING)
                     taskStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null);
-                taskStorage.releaseLock(lock);
-            } catch (Throwable t) {
-                long lock = taskStorage.lockState(id);
+            }
+            catch (Throwable t) {
                 taskStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null);
-                taskStorage.releaseLock(lock);
-            } finally {
+            }
+            finally {
                 instantiatedTasks.remove(id);
+                stateUpdateLock.unlock();
             }
         };
     }
 
     private Runnable runSingleTask(String id, Runnable fn) {
         return () -> {
-            long lock = taskStorage.lockState(id);
+            stateUpdateLock.lock();
 
             TaskState state = taskStorage.getState(id);
             if(state.status() == SCHEDULED) {
                 taskStorage.updateState(id, RUNNING, RUN_ONCE_NAME, null, null, null);
                 executorService.submit(exceptionCatcher(id, fn));
             }
-            taskStorage.releaseLock(lock);
+
+            stateUpdateLock.unlock();
         };
     }
 
     private Runnable runRecurringTask(String id, Runnable fn) {
         return () -> {
-            long lock = taskStorage.lockState(id);
+            stateUpdateLock.lock();
 
             TaskState state = taskStorage.getState(id);
             if(state.status() == SCHEDULED || state.status() == COMPLETED) {
                 taskStorage.updateState(id, RUNNING, RUN_RECURRING_NAME, null, null, null);
                 executorService.submit(exceptionCatcher(id, fn));
             }
-            taskStorage.releaseLock(lock);
+
+            stateUpdateLock.unlock();
         };
     }
 }

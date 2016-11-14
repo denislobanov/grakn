@@ -84,8 +84,4 @@ public interface TaskStorage {
      * @return Set<String> of task IDs matching the given @taskStatus.
      */
     Set<String> getTasks(TaskStatus taskStatus);
-
-    long lockState(String id);
-
-    void releaseLock(long lock);
 }
