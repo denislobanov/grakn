@@ -21,7 +21,7 @@ package ai.grakn.engine.controller;
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.TaskStorage;
+import ai.grakn.engine.backgroundtasks.TaskStateStorage;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -36,7 +36,6 @@ import spark.Response;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import java.util.UUID;
 
 import static ai.grakn.util.REST.Request.*;
 import static ai.grakn.util.REST.WebPath.ALL_BACKGROUND_TASKS_URI;
@@ -50,11 +49,11 @@ import static spark.Spark.put;
 public class BackgroundTasksController {
     private final Logger LOG = LoggerFactory.getLogger(BackgroundTasksController.class);
     private TaskManager taskManager;
-    private TaskStorage taskStorage;
+    private TaskStateStorage taskStateStorage;
 
     public BackgroundTasksController() {
         taskManager = InMemoryTaskManager.getInstance();
-        taskStorage = taskManager.storage();
+        taskStateStorage = taskManager.storage();
 
         get(ALL_BACKGROUND_TASKS_URI, this::getAllTasks);
         get(BACKGROUND_TASKS_BY_STATUS + TASK_STATUS_PARAMETER, this::getTasks);
@@ -70,7 +69,7 @@ public class BackgroundTasksController {
     @ApiOperation(value = "Return all known tasks.")
     private String getAllTasks(Request request, Response response) {
         JSONObject result = new JSONObject();
-        taskStorage.getAllTasks().forEach(x -> result.put(x, taskStorage.getState(x).status()));
+        taskStateStorage.getAllTasks().forEach(x -> result.put(x, taskStateStorage.getState(x).status()));
         response.type("application/json");
         return result.toString();
     }
@@ -85,7 +84,7 @@ public class BackgroundTasksController {
             String status = request.params(TASK_STATUS_PARAMETER);
             TaskStatus taskStatus = TaskStatus.valueOf(status);
 
-            taskStorage.getTasks(taskStatus).forEach(result::put);
+            taskStateStorage.getTasks(taskStatus).forEach(result::put);
             response.type("application/json");
             return result;
         } catch(Exception e) {
@@ -101,7 +100,7 @@ public class BackgroundTasksController {
         try {
             String id= request.params(ID_PARAMETER);
             JSONObject result = new JSONObject()
-                    .put("status", taskStorage.getState(id).status());
+                    .put("status", taskStateStorage.getState(id).status());
 
             response.type("application/json");
             return result.toString();

@@ -23,22 +23,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
 
-public class InMemoryTaskStorage implements TaskStorage {
-    private static InMemoryTaskStorage instance = null;
+public class InMemoryTaskStateStorage implements TaskStateStorage {
+    private static InMemoryTaskStateStorage instance = null;
 
     private Map<String, TaskState> storage;
 
-    private InMemoryTaskStorage() {
+    private InMemoryTaskStateStorage() {
         storage = new ConcurrentHashMap<>();
     }
 
-    public static synchronized InMemoryTaskStorage getInstance() {
+    public static synchronized InMemoryTaskStateStorage getInstance() {
         if(instance == null)
-            instance = new InMemoryTaskStorage();
+            instance = new InMemoryTaskStateStorage();
         return instance;
     }
 

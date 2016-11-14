@@ -45,7 +45,7 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
         String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date());
 
         // Wait for task to be executed.
-        TaskStorage storage = taskManager.storage();
+        TaskStateStorage storage = taskManager.storage();
         long initial = new Date().getTime();
         while ((new Date().getTime())-initial < 3000) {
             if(storage.getState(id).status() == COMPLETED)

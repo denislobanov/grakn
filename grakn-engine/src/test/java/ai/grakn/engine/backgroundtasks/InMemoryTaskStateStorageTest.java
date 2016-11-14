@@ -22,17 +22,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Date;
-import java.util.concurrent.ExecutionException;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static org.junit.Assert.*;
 
-public class InMemoryTaskStorageTest {
-    private TaskStorage taskStorage;
+public class InMemoryTaskStateStorageTest {
+    private TaskStateStorage taskStateStorage;
 
     @Before
     public void setUp() {
-        taskStorage = InMemoryTaskStorage.getInstance();
+        taskStateStorage = InMemoryTaskStateStorage.getInstance();
     }
 
     @Test
@@ -41,10 +40,10 @@ public class InMemoryTaskStorageTest {
 
         Date runAt = new Date();
         String custom = "blablablalba";
-        String id = taskStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0, custom);
+        String id = taskStateStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0, custom);
         assertNotNull(id);
 
-        TaskState state = taskStorage.getState(id);
+        TaskState state = taskStateStorage.getState(id);
         assertEquals("name", task.getClass().getName(), state.taskClassName());
         assertEquals("creator", this.getClass().getName(), state.creator());
         assertEquals("runAt", runAt, state.runAt());
@@ -58,11 +57,11 @@ public class InMemoryTaskStorageTest {
         TestTask task = new TestTask();
         Date runAt = new Date();
 
-        String id = taskStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0, null);
+        String id = taskStateStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0, null);
         assertNotNull(id);
 
         // Get current values
-        TaskState state = taskStorage.getState(id);
+        TaskState state = taskStateStorage.getState(id);
         TaskStatus status = state.status();
         String changedBy = state.statusChangedBy();
         String executingHostname = state.executingHostname();
@@ -70,9 +69,9 @@ public class InMemoryTaskStorageTest {
         String custom = state.customState();
 
         // Change.
-        taskStorage.updateState(id, SCHEDULED, "bla", "example.com", new UnsupportedOperationException(), "blabla");
+        taskStateStorage.updateState(id, SCHEDULED, "bla", "example.com", new UnsupportedOperationException(), "blabla");
 
-        TaskState newState = taskStorage.getState(id);
+        TaskState newState = taskStateStorage.getState(id);
         assertNotEquals("the object itself", state, newState);
         assertNotEquals("status", state.status(), newState.status());
         assertNotEquals("status changed by", state.statusChangedBy(), newState.statusChangedBy());

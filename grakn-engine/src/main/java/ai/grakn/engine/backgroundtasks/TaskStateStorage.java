@@ -21,7 +21,7 @@ package ai.grakn.engine.backgroundtasks;
 import java.util.Date;
 import java.util.Set;
 
-public interface TaskStorage {
+public interface TaskStateStorage {
     /**
      * Create a new task state and store it, returning an ID to later access this task state.
      * @param taskName String class name of object implementing the BackgroundTask interface. This must not be null.

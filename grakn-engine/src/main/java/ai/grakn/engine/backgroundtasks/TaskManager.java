@@ -48,8 +48,8 @@ public interface TaskManager {
     TaskManager stopTask(String id, String requesterName);
 
     /**
-     * Return the TaskStorage instance that is used by this class.
-     * @return A TaskStorage instance.
+     * Return the TaskStateStorage instance that is used by this class.
+     * @return A TaskStateStorage instance.
      */
-    TaskStorage storage();
+    TaskStateStorage storage();
 }
