@@ -62,15 +62,9 @@ public class InMemoryTaskStorage implements TaskStorage {
     }
 
     public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
-                            Throwable failure, String custom, long lock) {
+                            Throwable failure, String custom) {
         if(id == null || status == null)
             return;
-
-        // Ensure lock exists
-        if(!storageLock.validate(lock)) {
-            System.out.println("update called withouut a valid lock");
-            return;
-        }
 
         TaskState state = storage.get(id);
         synchronized (state) {
@@ -80,9 +74,6 @@ public class InMemoryTaskStorage implements TaskStorage {
                  .failure(failure)
                  .customState(custom);
         }
-
-        // Release lock
-        storageLock.unlock(lock);
     }
 
     public TaskState getState(String id) {
@@ -116,5 +107,9 @@ public class InMemoryTaskStorage implements TaskStorage {
 
     public long lockState(String id) {
         return storageLock.writeLock();
+    }
+
+    public void releaseLock(long lock) {
+        storageLock.unlock(lock);
     }
 }

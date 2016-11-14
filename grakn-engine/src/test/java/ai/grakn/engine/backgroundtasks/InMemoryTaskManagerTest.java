@@ -61,7 +61,7 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
 
     @Test
     public void testStopSingle() {
-        TestTask task = new TestTask();
+        BackgroundTask task = new LongRunningTask();
         String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date());
 
         TaskStatus status = taskManager.storage().getState(id).status();

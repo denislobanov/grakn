@@ -57,8 +57,7 @@ public interface TaskStorage {
                      String statusChangeBy,
                      String executingHostname,
                      Throwable failure,
-                     String custom,
-                     long lock
+                     String custom
                      );
 
     /**
@@ -87,4 +86,6 @@ public interface TaskStorage {
     Set<String> getTasks(TaskStatus taskStatus);
 
     long lockState(String id);
+
+    void releaseLock(long lock);
 }
