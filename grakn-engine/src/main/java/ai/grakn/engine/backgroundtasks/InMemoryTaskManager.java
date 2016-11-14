@@ -38,6 +38,7 @@ public class InMemoryTaskManager implements TaskManager {
     private final Logger LOG = LoggerFactory.getLogger(InMemoryTaskManager.class);
 
     private Map<String, ScheduledFuture<BackgroundTask>> scheduledFutures;
+    private Map<String, BackgroundTask> instantiatedTasks;
     private TaskStorage taskStorage;
 
     private ExecutorService executorService;
@@ -45,6 +46,7 @@ public class InMemoryTaskManager implements TaskManager {
 
     private InMemoryTaskManager() {
         scheduledFutures = new ConcurrentHashMap<>();
+        instantiatedTasks = new ConcurrentHashMap<>();
         taskStorage = InMemoryTaskStorage.getInstance();
 
         ConfigProperties properties = ConfigProperties.getInstance();
@@ -68,6 +70,7 @@ public class InMemoryTaskManager implements TaskManager {
         ScheduledFuture<BackgroundTask> f = (ScheduledFuture<BackgroundTask>) schedulingService.schedule(
                 runSingleTask(id, task::start), delay, MILLISECONDS);
 
+        instantiatedTasks.put(id, task);
         scheduledFutures.put(id, f);
         taskStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null);
         return id;
@@ -82,6 +85,7 @@ public class InMemoryTaskManager implements TaskManager {
         ScheduledFuture<BackgroundTask> f = (ScheduledFuture<BackgroundTask>) schedulingService.scheduleAtFixedRate(
                 runRecurringTask(id, task::start), delay, period, MILLISECONDS);
 
+        instantiatedTasks.put(id, task);
         scheduledFutures.put(id, f);
         taskStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null);
         return id;
@@ -104,20 +108,14 @@ public class InMemoryTaskManager implements TaskManager {
                 taskStorage.updateState(id, STOPPED, name,null, null, null);
             }
             else if(state.status() == RUNNING) {
-                try {
-                    System.out.println("currently running, calling stop");
-                    future.get(2000, MILLISECONDS).stop();
-                    taskStorage.updateState(id, STOPPED, name, null, null, null);
-                }
-                catch (InterruptedException | TimeoutException e) {
-                    System.out.println(e);
-                    taskStorage.updateState(id, DEAD, name, null, null, null);
-                }
-                catch (ExecutionException e) {
-                    System.out.println(e);
-                    taskStorage.updateState(id, FAILED, name, null, e, null);
+                System.out.println("currently running, calling stop");
+
+                BackgroundTask task = instantiatedTasks.get(id);
+                synchronized (task) {
+                    task.stop();
                 }
 
+                taskStorage.updateState(id, STOPPED, name, null, null, null);
             }
             else {
                 System.out.println("not running");
@@ -140,6 +138,11 @@ public class InMemoryTaskManager implements TaskManager {
                 taskStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null);
             } catch (Throwable t) {
                 taskStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null);
+            } finally {
+                BackgroundTask task = instantiatedTasks.get(id);
+                synchronized (task) {
+                    instantiatedTasks.remove(id);
+                }
             }
         };
     }
