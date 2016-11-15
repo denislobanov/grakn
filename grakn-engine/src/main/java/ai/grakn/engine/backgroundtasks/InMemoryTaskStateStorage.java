@@ -40,7 +40,7 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
         return instance;
     }
 
-    public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, String custom) {
+    public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval) {
         if(taskName == null || createdBy == null || runAt == null || recurring == null)
             return null;
 
@@ -48,8 +48,7 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
         state.creator(createdBy)
              .runAt(runAt)
              .isRecurring(recurring)
-             .interval(interval)
-             .customState(custom);
+             .interval(interval);
 
         String id = UUID.randomUUID().toString();
         storage.put(id, state);
@@ -58,7 +57,7 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
     }
 
     public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
-                            Throwable failure, String custom) {
+                            Throwable failure, String checkpoint) {
         if(id == null || status == null)
             return;
 
@@ -68,7 +67,7 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
                  .statusChangedBy(statusChangeBy)
                  .executingHostname(executingHostname)
                  .failure(failure)
-                 .customState(custom);
+                 .checkpoint(checkpoint);
         }
     }
 

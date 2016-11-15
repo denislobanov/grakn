@@ -49,7 +49,7 @@ public class InMemoryTaskStateStorageTest {
         assertEquals("runAt", runAt, state.runAt());
         assertEquals("recurring", false, state.isRecurring());
         assertEquals("interval", 0, state.interval());
-        assertEquals("custom", custom, state.customState());
+        assertEquals("custom", custom, state.checkpoint());
     }
 
     @Test
@@ -66,7 +66,7 @@ public class InMemoryTaskStateStorageTest {
         String changedBy = state.statusChangedBy();
         String executingHostname = state.executingHostname();
         Throwable failure = state.failure();
-        String custom = state.customState();
+        String custom = state.checkpoint();
 
         // Change.
         taskStateStorage.updateState(id, SCHEDULED, "bla", "example.com", new UnsupportedOperationException(), "blabla");
@@ -78,6 +78,6 @@ public class InMemoryTaskStateStorageTest {
         assertNotEquals("hostname", state.executingHostname(), newState.executingHostname());
         assertNotEquals("isFailure", state.isFailed(), newState.isFailed());
         assertNotEquals("failure (throwable)", state.failure(), newState.failure());
-        assertNotEquals("custorm", state.customState(), newState.customState());
+        assertNotEquals("custorm", state.checkpoint(), newState.checkpoint());
     }
 }

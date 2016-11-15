@@ -7,7 +7,7 @@ scheduled-task isa entity-type;
 status isa resource-type, datatype string;
 status-change-time isa resource-type, datatype long;
 status-change-by isa resource-type, datatype string;
-task-name isa resource-type, datatype string;
+task-taskClassName isa resource-type, datatype string;
 created-by isa resource-type, datatype string;
 executing-hostname isa resource-type, datatype string;
 run-at isa resource-type, datatype long;
@@ -19,7 +19,7 @@ custom-state isa resource-type, datatype string;
 scheduled-task has-resource status,
                has-resource status-change-time,
                has-resource status-change-by,
-               has-resource task-name,
+               has-resource task-taskClassName,
                has-resource created-by,
                has-resource executing-hostname,
                has-resource run-at,

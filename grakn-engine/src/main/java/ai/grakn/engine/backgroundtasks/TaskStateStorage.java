@@ -31,8 +31,6 @@ public interface TaskStateStorage {
      *                  This must not be null.
      * @param interval If a task is marked as recurring, this represents the time delay between the next executing of this task.
      *                 This must not be null.
-     * @param custom String used to store custom task state - if the task process wants to persist some of its state it should be serialised
-     *               to a string here. This field may be left null.
      * @return String form of the task id, which can be use later to update or retrieve the task state. Null if task could
      * not be created of mandatory fields were omitted.
      */
@@ -40,8 +38,7 @@ public interface TaskStateStorage {
                     String createdBy,
                     Date runAt,
                     Boolean recurring,
-                    long interval,
-                    String custom);
+                    long interval);
 
     /**
      * Used to update task state.
@@ -50,15 +47,14 @@ public interface TaskStateStorage {
      * @param statusChangeBy String identifying caller, may be null.
      * @param executingHostname String hostname of engine instance scheduling/executing this task. May be null.
      * @param failure Throwable to store any exceptions that occurred during executing. May be null.
-     * @param custom String to store any custom state. May be null.
+     * @param checkpoint String to store task checkpoint, may be null.
      */
     void updateState(String id,
                      TaskStatus status,
                      String statusChangeBy,
                      String executingHostname,
                      Throwable failure,
-                     String custom
-                     );
+                     String checkpoint);
 
     /**
      * This is a copy of the internal TaskState object. It is guaranteed to be correct at the time of call, however the actual

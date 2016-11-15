@@ -19,7 +19,6 @@
 package ai.grakn.engine.backgroundtasks;
 
 import java.util.Date;
-import java.util.Map;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
@@ -40,7 +39,7 @@ public class TaskState implements Cloneable {
     /**
      * Name of Class implementing the BackgroundTask interface that should be executed when task is run.
      */
-    private String name;
+    private String taskClassName;
     /**
      * String identifying who created this task.
      */
@@ -66,15 +65,14 @@ public class TaskState implements Cloneable {
      */
     private Throwable failure;
     /**
-     * Used to store custom task state - if the task process wants to persist some of its state it should be serialised
-     * to a string here.
+     * Used to store a task checkpoint allowing it to resume from the same point of execution as at the time of the checkpoint.
      */
-    private String custom;
+    private String taskCheckpoint;
     
-    TaskState(String name) {
+    TaskState(String taskClassName) {
         status = TaskStatus.CREATED;
         failure = null;
-        this.name = name;
+        this.taskClassName = taskClassName;
     }
 
     public TaskState status(TaskStatus status) {
@@ -105,7 +103,7 @@ public class TaskState implements Cloneable {
     }
 
     public String taskClassName() {
-        return this.name;
+        return this.taskClassName;
     }
 
     public TaskState creator(String creator) {
@@ -166,13 +164,13 @@ public class TaskState implements Cloneable {
     	return this;
     }
 
-    public TaskState customState(String custom) {
-        this.custom = custom;
+    public TaskState checkpoint(String taskCheckpoint) {
+        this.taskCheckpoint = taskCheckpoint;
         return this;
     }
 
-    public String customState() {
-        return custom;
+    public String checkpoint() {
+        return taskCheckpoint;
     }
 
     public TaskState clone() throws CloneNotSupportedException {
@@ -187,7 +185,7 @@ public class TaskState implements Cloneable {
              .isRecurring(recurring)
              .interval(interval)
              .failure(failure)
-             .customState(custom);
+             .checkpoint(taskCheckpoint);
 
         return state;
     }

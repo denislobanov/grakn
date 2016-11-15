@@ -25,18 +25,11 @@ public interface TaskManager {
      * Schedule a single shot/one off BackgroundTask to run after a @delay in milliseconds.
      * @param task Any object implementing the BackgroundTask interface that is to be scheduled for later execution.
      * @param runAt Date when task should run.
+     * @param period A non-zero value indicates that this should be a recurring task and period indicates the delay between
+     *               subsequent runs of the task after successful execution.
      * @return Assigned ID of task scheduled for later execution.
      */
-    String scheduleTask(BackgroundTask task, String createdBy, Date runAt);
-
-    /**
-     * Schedule a task for recurring execution at every @period interval and after an initial @delay.
-     * @param task Any object implementing the BackgroundTask interface that is to be scheduled for later execution.
-     * @param runAt Date when task should run.
-     * @param period Long interval between subsequent calls to @task.start().
-     * @return Assigned ID of task scheduled for later execution.
-     */
-    String scheduleRecurringTask(BackgroundTask task, String createdBy, Date runAt, long period);
+    String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period);
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the
