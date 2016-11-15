@@ -19,6 +19,7 @@
 package ai.grakn.engine.backgroundtasks;
 
 import ai.grakn.engine.GraknEngineTestBase;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,7 +43,7 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     public void testRunSingle() throws Exception {
         TestTask task = new TestTask();
 
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 0);
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 0, new JSONObject());
 
         // Wait for task to be executed.
         TaskStateStorage storage = taskManager.storage();
@@ -67,7 +68,7 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     public void testRunRecurring() throws Exception {
         TestTask task = new TestTask();
 
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 100);
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 100, new JSONObject());
         Thread.sleep(2000);
 
         assertTrue(task.getRunCount() > 1);
@@ -79,7 +80,7 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     @Test
     public void testStopSingle() {
         BackgroundTask task = new LongRunningTask();
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 0);
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 0, new JSONObject());
 
         TaskStatus status = taskManager.storage().getState(id).status();
         assertTrue(status == SCHEDULED || status == RUNNING);

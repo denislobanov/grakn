@@ -23,6 +23,7 @@ import com.jayway.restassured.http.ContentType;
 import ai.grakn.engine.GraknEngineTestBase;
 import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
 import ai.grakn.engine.backgroundtasks.TestTask;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,7 +45,7 @@ public class BackgroundTaskControllerTest extends GraknEngineTestBase {
     @Before
     public void setUp() throws Exception {
         taskManager = InMemoryTaskManager.getInstance();
-        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0);
+        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
 
         // Wait for task to finish
         Thread.sleep(1000);
@@ -74,53 +75,4 @@ public class BackgroundTaskControllerTest extends GraknEngineTestBase {
                 .then().statusCode(200)
                 .and().body("status", equalTo(COMPLETED.toString()));
     }
-/*
-    @Test
-    public void testPauseResume() {
-        String uuid = taskManager.scheduleTask(new TestTask(), 1000).toString();
-
-        // Pause task.
-        put("/backgroundtasks/task/"+uuid+"/pause").then().statusCode(200);
-
-        // Check task status.
-        get("/backgroundtasks/task/"+uuid)
-                .then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("status", equalTo(PAUSED.toString()));
-
-        // Resume task.
-        put("/backgroundtasks/task/"+uuid+"/resume").then().statusCode(200);
-
-        // Check task status.
-        get("/backgroundtasks/task/"+uuid)
-                .then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("status", anyOf(equalTo(RUNNING.toString()),
-                                                  equalTo(COMPLETED.toString())));
-    }
-
-    @Test
-    public void testStopRestart() {
-        String uuid = taskManager.scheduleTask(new TestTask(), 1000).toString();
-
-        // Stop task.
-        put("/backgroundtasks/task/"+uuid+"/stop").then().statusCode(200);
-
-        // Check task is stopped.
-        get("/backgroundtasks/task/"+uuid)
-                .then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("status", equalTo(STOPPED.toString()));
-
-        // Restart task.
-        put("/backgroundtasks/task/"+uuid+"/restart").then().statusCode(200);
-
-        get("/backgroundtasks/task/"+uuid)
-                .then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("status", anyOf(equalTo(SCHEDULED.toString()),
-                                                  equalTo(RUNNING.toString()),
-                                                  equalTo(COMPLETED.toString())));
-    }
-    */
 }

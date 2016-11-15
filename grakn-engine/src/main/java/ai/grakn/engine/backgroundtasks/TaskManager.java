@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import org.json.JSONObject;
+
 import java.util.Date;
 
 public interface TaskManager {
@@ -29,7 +31,7 @@ public interface TaskManager {
      *               subsequent runs of the task after successful execution.
      * @return Assigned ID of task scheduled for later execution.
      */
-    String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period);
+    String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration);
 
     /**
      * Stop a Scheduled, Paused or Running task. Task's .stop() method will be called to perform any cleanup and the

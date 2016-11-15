@@ -20,27 +20,32 @@ package ai.grakn.engine.backgroundtasks;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Instance;
+import ai.grakn.concept.Resource;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.Var;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.function.Function;
 
 import static ai.grakn.graql.Graql.var;
 
 public class GraknTaskStateStorage implements TaskStateStorage {
     private final static String SYSTEM_KEYSPACE = "grakn-system";
+    private final static String TASK_VAR = "task";
 
     private final Logger LOG = LoggerFactory.getLogger(InGraphTaskManager.class);
     private GraknGraph graph;
 
-    public GraknTaskStateStorage {
+    public GraknTaskStateStorage() {
         graph = GraphFactory.getInstance().getGraph(SYSTEM_KEYSPACE);
     }
 
-    public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, String custom) {
+    public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval) {
         if(taskName == null || createdBy == null || runAt == null || recurring == null)
             return null;
 
@@ -50,9 +55,6 @@ public class GraknTaskStateStorage implements TaskStateStorage {
                                       .has("run-at", runAt.getTime())
                                       .has("recurring", recurring)
                                       .has("recur-interval", interval);
-
-        if(custom != null)
-            state.has("custom-state", custom);
 
         graph.graql().insert(state).execute();
 
@@ -71,11 +73,77 @@ public class GraknTaskStateStorage implements TaskStateStorage {
     }
 
     public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
-                            Throwable failure, String custom) {
-        if (id == null || status == null)
+                            Throwable failure, String checkpoint) {
+        if(id == null || status == null)
             return;
 
-        graph.graql().
+        // Existing resource relations to remove
+        ArrayList<Var> deleters = new ArrayList<>();
+
+        // New resources to add
+        ArrayList<Var> resources = new ArrayList<>();
+        resources.add(var(TASK_VAR).id(id));
+
+        if(statusChangeBy != null) {
+            deleters.add(var(TASK_VAR).has("status-change-by"));
+            resources.add(var(TASK_VAR).has("status-change-by", statusChangeBy));
+        }
+
+        if(executingHostname != null) {
+            deleters.add(var(TASK_VAR).has("executing-hostname"));
+            resources.add(var(TASK_VAR).has("executing-hostname", executingHostname));
+        }
+
+        if(failure != null) {
+            deleters.add(var(TASK_VAR).has("task-failure"));
+            resources.add(var(TASK_VAR).has("task-failure", failure));
+        }
+
+        if(checkpoint != null) {
+            deleters.add(var(TASK_VAR).has("task-checkpoint"));
+            resources.add(var(TASK_VAR).has("task-checkpoint", checkpoint));
+        }
+
+        if(deleters.size() > 0) {
+            graph.graql().match(var(TASK_VAR).id(id))
+                    .delete(deleters)
+                    .execute();
+
+            graph.graql().insert(resources)
+                    .execute();
+
+            try {
+                graph.commit();
+            } catch(GraknValidationException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
+    public TaskState getState(String id) {
+        if(id == null)
+            return null;
+
+        Instance instance = graph.getInstance(id);
+        if(instance == null)
+            return null;
+
+        return new TaskState(getResourceWith(instance, "task-class-name", Object::toString))
+                .status(TaskStatus.valueOf(getResourceWith(instance, "task-status", Object::toString)))
+                .statusChangeTime(new Date(getResourceWith(instance, "status-change-time", x -> (Long)x )))
+                .statusChangedBy(getResourceWith(instance, "status-change-by", Object::toString))
+                .creator(getResourceWith(instance, "created-by", Object::toString))
+                .executingHostname(getResourceWith(instance, "executing-hostname", Object::toString))
+                .runAt(new Date(getResourceWith(instance, "run-at", x -> Long.
+
+    }
+
+
+    private<T> T getResourceWith(Instance instance, String resourceType, Function<Object, T> transform) {
+        return instance.asEntity()
+                       .resources(graph.getResourceType(resourceType))
+                       .stream().findFirst()
+                       .map(x -> x.getValue()
+                       .orElse(null);
+    }
 }

@@ -18,34 +18,36 @@
 
 package ai.grakn.engine.controller;
 
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
-import ai.grakn.engine.backgroundtasks.TaskManager;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.TaskStateStorage;
+import ai.grakn.engine.backgroundtasks.*;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import javafx.util.Pair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import spark.QueryParamsMap;
 import spark.Request;
 import spark.Response;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 
+import java.util.Date;
+
 import static ai.grakn.util.REST.Request.*;
-import static ai.grakn.util.REST.WebPath.ALL_BACKGROUND_TASKS_URI;
-import static ai.grakn.util.REST.WebPath.BACKGROUND_TASKS_BY_STATUS;
-import static ai.grakn.util.REST.WebPath.BACKGROUND_TASK_STATUS;
+import static ai.grakn.util.REST.WebPath.*;
 import static spark.Spark.get;
 import static spark.Spark.put;
+import static spark.Spark.post;
 
-@Path("/backgroundtasks")
-@Api(value = "/backgroundtasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
+@Path("/tasks")
+@Api(value = "/tasks", description = "Endpoints used to query and control queued background tasks.", produces = "application/json")
 public class BackgroundTasksController {
     private final Logger LOG = LoggerFactory.getLogger(BackgroundTasksController.class);
     private TaskManager taskManager;
@@ -55,36 +57,31 @@ public class BackgroundTasksController {
         taskManager = InMemoryTaskManager.getInstance();
         taskStateStorage = taskManager.storage();
 
-        get(ALL_BACKGROUND_TASKS_URI, this::getAllTasks);
-        get(BACKGROUND_TASKS_BY_STATUS + TASK_STATUS_PARAMETER, this::getTasks);
-        get(BACKGROUND_TASK_STATUS + ID_PARAMETER, this::getTask);
-//        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_PAUSE, this::pauseTask);
-//        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_RESUME, this::resumeTask);
-        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_STOP, this::stopTask);
-//        put(BACKGROUND_TASK_STATUS + ID_PARAMETER + TASK_RESTART, this::restartTask);
+        get(ALL_TASKS_URI, this::getTasks);
+        get(TASKS_URI + "/" + ID_PARAMETER, this::getTask);
+        put(TASKS_URI + "/" + ID_PARAMETER + TASK_STOP, this::stopTask);
+        post(TASKS_SCHEDULE_URI, this::scheduleTask);
     }
 
     @GET
     @Path("/all")
-    @ApiOperation(value = "Return all known tasks.")
-    private String getAllTasks(Request request, Response response) {
-        JSONObject result = new JSONObject();
-        taskStateStorage.getAllTasks().forEach(x -> result.put(x, taskStateStorage.getState(x).status()));
-        response.type("application/json");
-        return result.toString();
-    }
-
-    @GET
-    @Path("/tasks/:status")
     @ApiOperation(value = "Get tasks matching a specific TaskStatus.")
-    @ApiImplicitParam(name = "status", value = "TaskStatus as string", required = true, dataType = "string", paramType = "path")
+    @ApiImplicitParams({
+        @ApiImplicitParam(name = "status", value = "TaskStatus as string", required = false, dataType = "string", paramType = "query"),
+        @ApiImplicitParam(name = "className", value = "Class name of BackgroundTask Object", required = false, dataType = "string", paramType = "query"),
+        @ApiImplicitParam(name = "creator", value = "Who instatiated these tasks.", required = false, dataType = "string", paramType = "query")
+    })
     private JSONArray getTasks(Request request, Response response) {
-        JSONArray result = new JSONArray();
         try {
-            String status = request.params(TASK_STATUS_PARAMETER);
-            TaskStatus taskStatus = TaskStatus.valueOf(status);
+            TaskStatus status = TaskStatus.valueOf(request.queryParams(TASK_STATUS_PARAMETER));
+            String className = request.queryParams(TASK_CLASS_NAME_PARAMETER);
+            String creator = request.queryParams(TASK_CREATOR_PARAMETER);
 
-            taskStateStorage.getTasks(taskStatus).forEach(result::put);
+            JSONArray result = new JSONArray();
+            for(Pair<String, TaskState> pair: taskStateStorage.getTasks(status, className, creator)) {
+                result.put(serialiseState(pair.getKey(), pair.getValue()));
+            }
+
             response.type("application/json");
             return result;
         } catch(Exception e) {
@@ -93,52 +90,22 @@ public class BackgroundTasksController {
     }
 
     @GET
-    @Path("/task/:uuid")
+    @Path("/:uuid")
     @ApiOperation(value = "Get the state of a specific task by its ID.", produces = "application/json")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String getTask(Request request, Response response) {
         try {
-            String id= request.params(ID_PARAMETER);
-            JSONObject result = new JSONObject()
-                    .put("status", taskStateStorage.getState(id).status());
-
+            String id = request.params(ID_PARAMETER);
+            JSONObject result = serialiseState(id, taskStateStorage.getState(id));
             response.type("application/json");
             return result.toString();
         } catch(Exception e) {
             throw new GraknEngineServerException(500, e);
         }
     }
-/*
-    @PUT
-    @Path("/task/:uuid/pause")
-    @ApiOperation(value = "Pause a running task.")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
-    private String pauseTask(Request request, Response response) {
-        try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
-            taskManager.pauseTask(uuid, this.getClass().getName(), null);
-            return "";
-        } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
-        }
-    }
 
     @PUT
-    @Path("/task/:uuid/resume")
-    @ApiOperation(value = "Resume a paused task.")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
-    private String resumeTask(Request request, Response response) {
-        try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
-            taskManager.resumeTask(uuid, this.getClass().getName(), null);
-            return "";
-        } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
-        }
-    }
-*/
-    @PUT
-    @Path("/task/:uuid/stop")
+    @Path("/:uuid/stop")
     @ApiOperation(value = "Stop a running or paused task.")
     @ApiImplicitParam(name = "uuid", value = "ID of task.", required = true, dataType = "string", paramType = "path")
     private String stopTask(Request request, Response response) {
@@ -150,18 +117,57 @@ public class BackgroundTasksController {
             throw new GraknEngineServerException(500, e);
         }
     }
-/*
-    @PUT
-    @Path("/task/:uuid/restart")
-    @ApiOperation(value = "Restart a stopped or paused task.")
-    @ApiImplicitParam(name = "uuid", value = "UUID of task.", required = true, dataType = "string", paramType = "path")
-    private String restartTask(Request request, Response response) {
+
+    @POST
+    @Path("/schedule")
+    @ApiOperation(value = "Schedule a task.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "className", value = "Class name of object implementing the BackgroundTask interface", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "createdBy", value = "String representing the user scheduling this task", required = true, dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "runAt", value = "Time to run at as milliseconds since the UNIX epoch", required = true, dataType = "long", paramType = "query"),
+            @ApiImplicitParam(name = "interval",value = "If set the task will be marked as recurring and the value will be the time in milliseconds between repeated executions of this task. Value should be as Long.",
+                    dataType = "long", paramType = "query"),
+            @ApiImplicitParam(name = "configuration", value = "JSON Object that will be given to the task as configuration.", dataType = "String", paramType = "query")
+    })
+    private String scheduleTask(Request request, Response response) {
         try {
-            UUID uuid = UUID.fromString(request.params(UUID_PARAMETER));
-            taskManager.restartTask(uuid, this.getClass().getName(), null);
-            return "";
-        } catch (Exception e) {
-            throw new GraknEngineServerException(500, e);
+            QueryParamsMap paramsMap = request.queryMap();
+            String className = paramsMap.get("className").value();
+            String createdBy = paramsMap.get("createdBy").value();
+            Date runAt = new Date(paramsMap.get("runAt").longValue());
+            Long interval = 0L;
+            JSONObject configuration = new JSONObject();
+
+            if(paramsMap.get("interval").hasValue())
+                interval = paramsMap.get("interval").longValue();
+            if(paramsMap.get("configuration").hasValue())
+                configuration = new JSONObject(paramsMap.get("configuration").value());
+
+            Class<?> clazz = Class.forName(className);
+            BackgroundTask task = (BackgroundTask)clazz.newInstance();
+
+            String id = taskManager.scheduleTask(task, createdBy, runAt, interval, configuration);
+            JSONObject resp = new JSONObject()
+                    .put("id", id);
+
+            return resp.toString();
+
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            throw new GraknEngineServerException(400, e);
         }
-    } */
+    }
+
+    private JSONObject serialiseState(String id, TaskState state) {
+        return new JSONObject().put("id", id)
+                               .put("status", state.status())
+                               .put("creator", state.creator())
+                               .put("className", state.taskClassName())
+                               .put("runAt", state.runAt())
+                               .put("recurring", state.isRecurring())
+                               .put("interval", state.interval())
+                               .put("isFailed", state.isFailed())
+                               .put("failure", state.failure())
+                               .put("executingHostname", state.executingHostname())
+                               .put("configuration", state.configuration());
+    }
 }

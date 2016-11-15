@@ -18,8 +18,12 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import javafx.util.Pair;
+import org.json.JSONObject;
+
 import java.util.Date;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public interface TaskStateStorage {
     /**
@@ -38,7 +42,8 @@ public interface TaskStateStorage {
                     String createdBy,
                     Date runAt,
                     Boolean recurring,
-                    long interval);
+                    long interval,
+                    JSONObject configuration);
 
     /**
      * Used to update task state.
@@ -54,7 +59,8 @@ public interface TaskStateStorage {
                      String statusChangeBy,
                      String executingHostname,
                      Throwable failure,
-                     String checkpoint);
+                     String checkpoint,
+                     JSONObject configuration);
 
     /**
      * This is a copy of the internal TaskState object. It is guaranteed to be correct at the time of call, however the actual
@@ -79,5 +85,5 @@ public interface TaskStateStorage {
      * @param taskStatus See TaskStatus enum.
      * @return Set<String> of task IDs matching the given @taskStatus.
      */
-    Set<String> getTasks(TaskStatus taskStatus);
+    Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy);
 }

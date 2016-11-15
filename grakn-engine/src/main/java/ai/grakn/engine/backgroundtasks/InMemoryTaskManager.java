@@ -20,6 +20,7 @@ package ai.grakn.engine.backgroundtasks;
 
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,10 +65,9 @@ public class InMemoryTaskManager implements TaskManager {
         return instance;
     }
 
-    public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period) {
+    public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
         Boolean recurring = (period != 0);
-
-        String id = taskStateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period);
+        String id = taskStateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
 
         // Schedule task to run.
         Date now = new Date();
@@ -80,12 +80,12 @@ public class InMemoryTaskManager implements TaskManager {
             else
                 future = schedulingService.schedule(runTask(id, task, false), delay, MILLISECONDS);
 
-            taskStateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null);
-            instantiatedTasks.put(id, new Pair<ScheduledFuture<?>, BackgroundTask>(future, task));
+            taskStateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
+            instantiatedTasks.put(id, new Pair<>(future, task));
 
         }
         catch (Throwable t) {
-            taskStateStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null);
+            taskStateStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
             instantiatedTasks.remove(id);
 
             return null;
@@ -108,7 +108,7 @@ public class InMemoryTaskManager implements TaskManager {
             if(state.status() == SCHEDULED || (state.status() == COMPLETED && state.isRecurring())) {
                 LOG.info("Stopping a currently scheduled task "+id);
                 pair.getKey().cancel(true);
-                taskStateStorage.updateState(id, STOPPED, name,null, null, null);
+                taskStateStorage.updateState(id, STOPPED, name,null, null, null, null);
             }
             else if(state.status() == RUNNING) {
                 LOG.info("Stopping running task "+id);
@@ -118,7 +118,7 @@ public class InMemoryTaskManager implements TaskManager {
                     task.stop();
                 }
 
-                taskStateStorage.updateState(id, STOPPED, name, null, null, null);
+                taskStateStorage.updateState(id, STOPPED, name, null, null, null, null);
             }
             else {
                 LOG.warn("Task not running - "+id);
@@ -136,14 +136,14 @@ public class InMemoryTaskManager implements TaskManager {
     private Runnable exceptionCatcher(String id, BackgroundTask task) {
         return () -> {
             try {
-                task.start(s -> taskStateStorage.updateState(id, RUNNING, SAVE_CHECKPOINT_NAME, null, null, s));
+                task.start(saveCheckpoint(id), taskStateStorage.getState(id).configuration());
 
                 stateUpdateLock.lock();
                 if(taskStateStorage.getState(id).status() == RUNNING)
-                    taskStateStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null);
+                    taskStateStorage.updateState(id, COMPLETED, EXCEPTION_CATCHER_NAME, null, null, null, null);
             }
             catch (Throwable t) {
-                taskStateStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null);
+                taskStateStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null, null);
             }
             finally {
                 stateUpdateLock.unlock();
@@ -157,15 +157,24 @@ public class InMemoryTaskManager implements TaskManager {
 
             TaskState state = taskStateStorage.getState(id);
             if(recurring && (state.status() == SCHEDULED || state.status() == COMPLETED)) {
-                taskStateStorage.updateState(id, RUNNING, RUN_RECURRING_NAME, null, null, null);
+                taskStateStorage.updateState(id, RUNNING, RUN_RECURRING_NAME, null, null, null, null);
                 executorService.submit(exceptionCatcher(id, task));
             }
             else if (!recurring && state.status() == SCHEDULED) {
-                taskStateStorage.updateState(id, RUNNING, RUN_ONCE_NAME, null, null, null);
+                taskStateStorage.updateState(id, RUNNING, RUN_ONCE_NAME, null, null, null, null);
                 executorService.submit(exceptionCatcher(id, task));
             }
 
             stateUpdateLock.unlock();
+        };
+    }
+
+    private Consumer<String> saveCheckpoint(String id) {
+        return new Consumer<String>() {
+            @Override
+            public void accept(String s) {
+                taskStateStorage.updateState(id, RUNNING, SAVE_CHECKPOINT_NAME, null, null, s, null);
+            }
         };
     }
 }

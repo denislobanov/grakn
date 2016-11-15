@@ -18,10 +18,10 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import javafx.util.Pair;
+import org.json.JSONObject;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -40,7 +40,7 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
         return instance;
     }
 
-    public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval) {
+    public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, JSONObject configuration) {
         if(taskName == null || createdBy == null || runAt == null || recurring == null)
             return null;
 
@@ -48,7 +48,8 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
         state.creator(createdBy)
              .runAt(runAt)
              .isRecurring(recurring)
-             .interval(interval);
+             .interval(interval)
+             .configuration(configuration);
 
         String id = UUID.randomUUID().toString();
         storage.put(id, state);
@@ -57,17 +58,24 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
     }
 
     public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
-                            Throwable failure, String checkpoint) {
+                            Throwable failure, String checkpoint, JSONObject configuration) {
         if(id == null || status == null)
             return;
 
         TaskState state = storage.get(id);
         synchronized (state) {
-            state.status(status)
-                 .statusChangedBy(statusChangeBy)
-                 .executingHostname(executingHostname)
-                 .failure(failure)
-                 .checkpoint(checkpoint);
+            state.status(status);
+
+            if(statusChangeBy != null)
+                state.statusChangedBy(statusChangeBy);
+            if(executingHostname != null)
+                state.executingHostname(executingHostname);
+            if(failure != null)
+                state.failure(failure);
+            if(checkpoint != null)
+                state.checkpoint(checkpoint);
+            if(configuration != null)
+                state.configuration(configuration);
         }
     }
 
@@ -93,10 +101,15 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
         return storage.keySet();
     }
 
-    public Set<String> getTasks(TaskStatus taskStatus) {
-        return storage.entrySet().stream()
-                      .filter(x -> x.getValue().status() == taskStatus)
-                      .map(Map.Entry::getKey)
-                      .collect(Collectors.toSet());
+    public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy) {
+        Set<Pair<String, TaskState>> res = new HashSet<>();
+
+        for(Map.Entry<String, TaskState> x: storage.entrySet()) {
+            TaskState state = x.getValue();
+            if (state.status() == taskStatus && Objects.equals(state.taskClassName(), taskClassName) && Objects.equals(state.creator(), createdBy))
+                res.add(new Pair<>(x.getKey(), getState(x.getKey())));
+        }
+
+        return res;
     }
 }

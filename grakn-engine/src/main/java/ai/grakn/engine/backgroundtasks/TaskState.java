@@ -18,6 +18,8 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import org.json.JSONObject;
+
 import java.util.Date;
 
 /**
@@ -68,6 +70,7 @@ public class TaskState implements Cloneable {
      * Used to store a task checkpoint allowing it to resume from the same point of execution as at the time of the checkpoint.
      */
     private String taskCheckpoint;
+    private JSONObject configuration;
     
     TaskState(String taskClassName) {
         status = TaskStatus.CREATED;
@@ -173,6 +176,15 @@ public class TaskState implements Cloneable {
         return taskCheckpoint;
     }
 
+    public TaskState configuration(JSONObject configuration) {
+        this.configuration = configuration;
+        return this;
+    }
+
+    public JSONObject configuration() {
+        return configuration;
+    }
+
     public TaskState clone() throws CloneNotSupportedException {
         TaskState state = (TaskState)super.clone();
 
@@ -185,7 +197,8 @@ public class TaskState implements Cloneable {
              .isRecurring(recurring)
              .interval(interval)
              .failure(failure)
-             .checkpoint(taskCheckpoint);
+             .checkpoint(taskCheckpoint)
+             .configuration(new JSONObject(configuration.toString()));
 
         return state;
     }
