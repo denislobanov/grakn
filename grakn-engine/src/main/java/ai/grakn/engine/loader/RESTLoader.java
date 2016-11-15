@@ -103,10 +103,10 @@ public class RESTLoader {
         Date runAt = new Date();
         runAt.setTime(runAt.getTime() + postProcessingDelay);
 
-        InMemoryTaskManager.getInstance().scheduleRecurringTask(new PostProcessingTask(),
-                                                                this.getClass().getName(),
-                                                                runAt,
-                                                                postProcessingDelay);
+        InMemoryTaskManager.getInstance().scheduleTask(new PostProcessingTask(),
+                                                       this.getClass().getName(),
+                                                       runAt,
+                                                       postProcessingDelay);
     }
 
     public String getLoaderState() {

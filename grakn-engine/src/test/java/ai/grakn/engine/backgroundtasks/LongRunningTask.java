@@ -21,17 +21,19 @@ package ai.grakn.engine.backgroundtasks;
 import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public class LongRunningTask implements BackgroundTask {
     private AtomicBoolean isRunning = new AtomicBoolean(true);
 
-    public void start() {
+    public void start(Consumer<String> c) {
         long initial = new Date().getTime();
 
-        while (isRunning.get() && ((new Date().getTime())-initial < 50000)) {
+        while (isRunning.get() && ((new Date().getTime()) - initial < 50000)) {
             try {
                 Thread.sleep(100);
-            } catch (InterruptedException ignored) {}
+            } catch (InterruptedException ignored) {
+            }
         }
     }
 
@@ -39,11 +41,9 @@ public class LongRunningTask implements BackgroundTask {
         isRunning.set(false);
     }
 
-    public Map<String, Object> pause() {
-        return null;
+    public void pause() {
     }
 
-    public void resume(Map<String, Object> m) {}
-
-    public void restart() {}
+    public void resume(Consumer<String> c, String s) {
+    }
 }

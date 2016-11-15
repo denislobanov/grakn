@@ -22,25 +22,21 @@ package ai.grakn.engine.backgroundtasks;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public class TestTask implements BackgroundTask {
     private AtomicInteger runCount = new AtomicInteger(0);
 
-    public void start() {
+    public void start(Consumer<String> c) {
         runCount.incrementAndGet();
     }
 
     public void stop() {}
 
-    public Map<String, Object> pause() {
-        return new HashMap<>();
+    public void pause() {
     }
 
-    public void resume(Map<String, Object> m) {}
-
-    public void restart() {
-        runCount.set(0);
-    }
+    public void resume(Consumer<String> c, String s) {}
 
     public int getRunCount() {
         return runCount.get();

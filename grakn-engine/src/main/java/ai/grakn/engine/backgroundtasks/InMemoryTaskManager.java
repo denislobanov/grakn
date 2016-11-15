@@ -146,7 +146,6 @@ public class InMemoryTaskManager implements TaskManager {
                 taskStateStorage.updateState(id, FAILED, EXCEPTION_CATCHER_NAME, null, t, null);
             }
             finally {
-                instantiatedTasks.remove(id);
                 stateUpdateLock.unlock();
             }
         };

@@ -44,7 +44,7 @@ public class BackgroundTaskControllerTest extends GraknEngineTestBase {
     @Before
     public void setUp() throws Exception {
         taskManager = InMemoryTaskManager.getInstance();
-        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date());
+        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0);
 
         // Wait for task to finish
         Thread.sleep(1000);

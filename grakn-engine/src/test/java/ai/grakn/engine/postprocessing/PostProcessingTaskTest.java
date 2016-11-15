@@ -44,7 +44,7 @@ public class PostProcessingTaskTest extends GraknEngineTestBase {
 
     @Test
     public void testStart() throws Exception {
-        String id= taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), new Date());
+        String id= taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), new Date(), 0);
         Assert.assertNotEquals(CREATED, taskManager.storage().getState(id).status());
 
         // Wait for supervisor thread to mark task as completed
@@ -56,7 +56,7 @@ public class PostProcessingTaskTest extends GraknEngineTestBase {
 
     @Test
     public void testStop() {
-        String id = taskManager.scheduleRecurringTask(new PostProcessingTask(), this.getClass().getName(), new Date(), 10000);
+        String id = taskManager.scheduleTask(new PostProcessingTask(), this.getClass().getName(), new Date(), 10000);
         taskManager.stopTask(id, this.getClass().getName());
         Assert.assertEquals(STOPPED, taskManager.storage().getState(id).status());
     }

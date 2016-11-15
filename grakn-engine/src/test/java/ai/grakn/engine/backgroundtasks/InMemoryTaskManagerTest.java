@@ -42,7 +42,7 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     public void testRunSingle() throws Exception {
         TestTask task = new TestTask();
 
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date());
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 0);
 
         // Wait for task to be executed.
         TaskStateStorage storage = taskManager.storage();
@@ -67,7 +67,7 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     public void testRunRecurring() throws Exception {
         TestTask task = new TestTask();
 
-        String id = taskManager.scheduleRecurringTask(task, this.getClass().getName(), new Date(), 100);
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 100);
         Thread.sleep(2000);
 
         assertTrue(task.getRunCount() > 1);
@@ -79,7 +79,7 @@ public class InMemoryTaskManagerTest extends GraknEngineTestBase {
     @Test
     public void testStopSingle() {
         BackgroundTask task = new LongRunningTask();
-        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date());
+        String id = taskManager.scheduleTask(task, this.getClass().getName(), new Date(), 0);
 
         TaskStatus status = taskManager.storage().getState(id).status();
         assertTrue(status == SCHEDULED || status == RUNNING);

@@ -39,8 +39,7 @@ public class InMemoryTaskStateStorageTest {
         TestTask task = new TestTask();
 
         Date runAt = new Date();
-        String custom = "blablablalba";
-        String id = taskStateStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0, custom);
+        String id = taskStateStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0);
         assertNotNull(id);
 
         TaskState state = taskStateStorage.getState(id);
@@ -49,7 +48,6 @@ public class InMemoryTaskStateStorageTest {
         assertEquals("runAt", runAt, state.runAt());
         assertEquals("recurring", false, state.isRecurring());
         assertEquals("interval", 0, state.interval());
-        assertEquals("custom", custom, state.checkpoint());
     }
 
     @Test
@@ -57,7 +55,7 @@ public class InMemoryTaskStateStorageTest {
         TestTask task = new TestTask();
         Date runAt = new Date();
 
-        String id = taskStateStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0, null);
+        String id = taskStateStorage.newState(task.getClass().getName(), this.getClass().getName(), runAt, false, 0);
         assertNotNull(id);
 
         // Get current values
@@ -78,6 +76,6 @@ public class InMemoryTaskStateStorageTest {
         assertNotEquals("hostname", state.executingHostname(), newState.executingHostname());
         assertNotEquals("isFailure", state.isFailed(), newState.isFailed());
         assertNotEquals("failure (throwable)", state.failure(), newState.failure());
-        assertNotEquals("custorm", state.checkpoint(), newState.checkpoint());
+        assertNotEquals("checkpoint", state.checkpoint(), newState.checkpoint());
     }
 }
