@@ -113,7 +113,7 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
             if(createdBy != null && !Objects.equals(state.creator(), createdBy))
                 continue;
 
-            res.add(new Pair<>(x.getKey(), getState(x.getKey())));
+            res.add(new Pair<>(x.getKey(), state));
         }
 
         return res;
