@@ -150,13 +150,17 @@ public class TaskControllerTest extends GraknEngineTestBase {
         System.out.println(id);
 
         // Stop task
-        put("/tasks/"+id+"/stop")
-                .then().statusCode(200)
+        Response pr = put("/tasks/"+id+"/stop");
+
+        System.out.println(pr.body().asString());
+                pr.then().statusCode(200)
                 .and().contentType("text/html");
 
         // Check state
-        get("/tasks/"+id)
-                .then().statusCode(200)
+        Response gr = get("/tasks/"+id);
+
+        System.out.println(gr.body().asString());
+                gr.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
                 .and().body("id", equalTo(id))
                 .and().body("status", equalTo(STOPPED.toString()));
