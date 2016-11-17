@@ -101,12 +101,11 @@ public class TaskControllerTest extends GraknEngineTestBase {
     @Test
     public void testGetAllTasks() {
         System.out.println("testGetAllTasks");
-        taskManager.storage().clear();
+        Response response = get("/tasks/all");
 
-        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
-        taskManager.stopTask(singleTask, this.getClass().getName());
-        get("/tasks/all")
-                .then().statusCode(200)
+        System.out.println(response.body().asString());
+
+        response.then().statusCode(200)
                 .and().contentType(ContentType.JSON)
                 .and().body("list.size()", greaterThanOrEqualTo(1));
     }
