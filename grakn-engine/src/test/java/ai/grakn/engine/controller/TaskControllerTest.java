@@ -44,6 +44,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     @Before
     public void setUp() throws Exception {
         taskManager = InMemoryTaskManager.getInstance();
+        taskManager.storage().clear();
         singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
         taskManager.stopTask(singleTask, this.getClass().getName());
     }
@@ -85,7 +86,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     @Test
     public void testTasksByCreator() {
         System.out.println("testTasksByCreator");
-       Response response = given().queryParam("creator", this.getClass().getName())
+        Response response = given().queryParam("creator", this.getClass().getName())
                                    .get("/tasks/all");
 
         response.then().statusCode(200)
@@ -119,7 +120,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)
                 .and().body("id", equalTo(singleTask))
-                .and().body("status", equalTo(COMPLETED.toString()));
+                .and().body("status", equalTo(STOPPED.toString()));
     }
 
     @Test
