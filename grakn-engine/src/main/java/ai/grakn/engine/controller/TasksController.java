@@ -83,6 +83,9 @@ public class TasksController {
             result.put(serialiseState(pair.getKey(), pair.getValue()));
         }
 
+        System.out.println("result length: "+result.length());
+        System.out.println(" all response: "+result.toString());
+
         response.type("application/json");
         return result;
     }
@@ -96,6 +99,8 @@ public class TasksController {
             String id = request.params(ID_PARAMETER);
             JSONObject result = serialiseState(id, taskStateStorage.getState(id));
             response.type("application/json");
+
+            System.out.println("get one response: "+result.toString());
             return result.toString();
         } catch(Exception e) {
             throw new GraknEngineServerException(500, e);

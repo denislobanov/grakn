@@ -116,6 +116,8 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
             res.add(new Pair<>(x.getKey(), state));
         }
 
+        System.out.println("storage found "+res.size());
+
         return res;
     }
 
