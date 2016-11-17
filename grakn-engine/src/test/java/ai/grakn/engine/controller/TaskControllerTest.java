@@ -25,6 +25,7 @@ import com.jayway.restassured.response.Response;
 import org.hamcrest.Matchers;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,7 +44,6 @@ public class TaskControllerTest extends GraknEngineTestBase {
     @Before
     public void setUp() throws Exception {
         taskManager = InMemoryTaskManager.getInstance();
-        taskManager.storage().clear();
         singleTask = taskManager.scheduleTask(new LongRunningTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
         taskManager.stopTask(singleTask, this.getClass().getName());
     }
@@ -109,7 +109,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON);
 
-        assertTrue(new JSONArray(response.body()).length() >= 1);
+        assertTrue(new JSONArray(response.body().asString()).length() >= 1);
     }
 
     @Test
@@ -142,6 +142,8 @@ public class TaskControllerTest extends GraknEngineTestBase {
                 .queryParam("runAt", new Date())
                 .queryParam("interval", 5000)
                 .post("/tasks/schedule");
+
+        System.out.println(response.body().asString());
 
         response.then().statusCode(200)
                 .and().contentType(ContentType.JSON);

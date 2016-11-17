@@ -102,6 +102,7 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
 
     public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy) {
         Set<Pair<String, TaskState>> res = new HashSet<>();
+        int count = 0;
         for(Map.Entry<String, TaskState> x: storage.entrySet()) {
             TaskState state = x.getValue();
 
@@ -113,15 +114,16 @@ public class InMemoryTaskStateStorage implements TaskStateStorage {
             if(createdBy != null && !Objects.equals(state.creator(), createdBy))
                 continue;
 
+            // Temporary hard limit
+            if(count > 200)
+                break;
+            count++;
+
             res.add(new Pair<>(x.getKey(), state));
         }
 
         System.out.println("storage found "+res.size());
 
         return res;
-    }
-
-    public void clear() {
-        storage.clear();
     }
 }
