@@ -44,7 +44,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     public void setUp() throws Exception {
         taskManager = InMemoryTaskManager.getInstance();
         taskManager.storage().clear();
-        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
+        singleTask = taskManager.scheduleTask(new LongRunningTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
         taskManager.stopTask(singleTask, this.getClass().getName());
     }
 
