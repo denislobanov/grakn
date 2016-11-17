@@ -30,7 +30,6 @@ import org.junit.Test;
 
 import java.util.Date;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static com.jayway.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
@@ -52,7 +51,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
     @Test
     public void testTasksByStatus() {
         System.out.println("testTasksByStatus");
-        Response response = given().queryParam("status", COMPLETED.toString())
+        Response response = given().queryParam("status", STOPPED.toString())
                                    .get("/tasks/all");
 
         response.then().statusCode(200)
@@ -62,7 +61,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
         JSONArray array = new JSONArray(response.body().asString());
         array.forEach(x -> {
             JSONObject o = (JSONObject)x;
-            assertEquals(COMPLETED.toString(), o.get("status"));
+            assertEquals(STOPPED.toString(), o.get("status"));
         });
     }
 
