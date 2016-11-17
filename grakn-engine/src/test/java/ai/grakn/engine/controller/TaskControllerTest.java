@@ -35,6 +35,7 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 import static com.jayway.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TaskControllerTest extends GraknEngineTestBase {
     private TaskManager taskManager;
@@ -106,8 +107,9 @@ public class TaskControllerTest extends GraknEngineTestBase {
         System.out.println(response.body().asString());
 
         response.then().statusCode(200)
-                .and().contentType(ContentType.JSON)
-                .and().body("list.size()", greaterThanOrEqualTo(1));
+                .and().contentType(ContentType.JSON);
+
+        assertTrue(new JSONArray(response.body()).length() >= 1);
     }
 
     @Test
@@ -117,7 +119,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
                 .then().statusCode(200)
                 .and().contentType(ContentType.JSON)
                 .and().body("id", equalTo(singleTask))
-                .and().body("status", equalTo(STOPPED.toString()));
+                .and().body("status", equalTo(COMPLETED.toString()));
     }
 
     @Test
