@@ -4,6 +4,8 @@ import java.util.Properties;
 
 public class KafkaConfig {
     public final static String WORK_QUEUE_TOPIC = "work-queue";
+    public final static String NEW_TASKS_TOPIC = "new-tasks";
+    public final static int POLL_FREQUENCY = 1000;
 
     public static Properties workQueueConsumer() {
         Properties properties = new Properties();
