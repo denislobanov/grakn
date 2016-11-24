@@ -16,8 +16,11 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks;
+package ai.grakn.engine.backgroundtasks.singleinstance;
 
+import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
 import javafx.util.Pair;
 import org.json.JSONObject;
 

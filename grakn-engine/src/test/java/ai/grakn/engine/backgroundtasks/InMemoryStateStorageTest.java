@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks;
 
+import ai.grakn.engine.backgroundtasks.singleinstance.InMemoryStateStorage;
 import javafx.util.Pair;
 import org.junit.Before;
 import org.junit.Test;

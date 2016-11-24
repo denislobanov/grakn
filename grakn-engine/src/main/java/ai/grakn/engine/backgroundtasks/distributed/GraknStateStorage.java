@@ -16,12 +16,15 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks;
+package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
+import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
@@ -125,17 +128,25 @@ public class GraknStateStorage implements StateStorage {
             resources.has(TASK_CONFIGURATION, configuration.toString());
         }
 
+        System.out.println("going to delete");
+
         // Remove relations to any resources we want to currently update
         graph.graql().match(var(TASK_VAR).id(id))
                 .delete(deleters)
                 .execute();
 
+        System.out.println("deleted, going to add new");
+
         // Insert new resources with new values.
         graph.graql().insert(resources)
                 .execute();
 
+        System.out.println("done, committing");
+
         try {
+            System.out.println("committing graph");
             graph.commit();
+            System.out.println("done");
         } catch(GraknValidationException e) {
             e.printStackTrace();
         }

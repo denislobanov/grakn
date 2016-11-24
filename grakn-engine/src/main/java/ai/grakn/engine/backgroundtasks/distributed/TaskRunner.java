@@ -5,6 +5,8 @@ import ai.grakn.engine.util.ConfigProperties;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -15,6 +17,8 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.*;
 
 public class TaskRunner implements Runnable {
+    private final Logger LOG = LoggerFactory.getLogger(TaskRunner.class);
+
     private StateStorage stateStorage;
     private KafkaConsumer<String, String> consumer;
 
@@ -31,10 +35,17 @@ public class TaskRunner implements Runnable {
                 ConsumerRecords<String, String> records = consumer.poll(500);
 
                 if(!records.isEmpty()) {
+                    LOG.debug("got "+records.count()+"records");
+                    System.out.println("got "+records.count()+"records");
+
                     // TODO: use ZK to mark entries as executing, find first thats not being run.
                     for(ConsumerRecord<String, String> r: records) {
-                        if(markAsRunning(r.key()))
+
+                        System.out.println("record key: "+r.key());
+
+                        if(markAsRunning(r.key())) {
                             runTask(r.key(), new Message(r.value()));
+                        }
                     }
                 }
                 else {
@@ -48,6 +59,7 @@ public class TaskRunner implements Runnable {
             catch (InterruptedException e) {
                 break;
             }
+
         }
     }
 
@@ -62,6 +74,8 @@ public class TaskRunner implements Runnable {
             hostname = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException ignored) {}
 
+        LOG.debug("Marking task "+id+" as RUNNING, "+hostname);
+        System.out.println("Marking task "+id+" as RUNNING, "+hostname);
         stateStorage.updateState(id, RUNNING, this.getClass().getName(), hostname, null, null, null);
 
         return true;
@@ -70,6 +84,9 @@ public class TaskRunner implements Runnable {
     private void runTask(String id, Message message) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
         // State contains class name
         TaskState state = stateStorage.getState(id);
+
+        System.out.println("running task: "+state.taskClassName());
+        LOG.debug("running task "+state.taskClassName());
 
         // Instantiate task
         Class<?> c = Class.forName(state.taskClassName());

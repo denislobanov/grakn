@@ -76,7 +76,7 @@ public class TaskState implements Cloneable {
      */
     private JSONObject configuration;
     
-    TaskState(String taskClassName) {
+    public TaskState(String taskClassName) {
         status = TaskStatus.CREATED;
         this.taskClassName = taskClassName;
     }

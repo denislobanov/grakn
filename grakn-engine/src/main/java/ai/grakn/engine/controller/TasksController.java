@@ -19,6 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.backgroundtasks.*;
+import ai.grakn.engine.backgroundtasks.singleinstance.SingleInstanceTaskManager;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
@@ -50,7 +51,7 @@ public class TasksController {
     private StateStorage stateStorage;
 
     public TasksController() {
-        taskManager = InMemoryTaskManager.getInstance();
+        taskManager = SingleInstanceTaskManager.getInstance();
         stateStorage = taskManager.storage();
 
         get(ALL_TASKS_URI, this::getTasks);

@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.loader;
 
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
+import ai.grakn.engine.backgroundtasks.singleinstance.SingleInstanceTaskManager;
 import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.util.ConfigProperties;
@@ -104,7 +104,7 @@ public class RESTLoader {
         Date runAt = new Date();
         runAt.setTime(runAt.getTime() + postProcessingDelay);
 
-        InMemoryTaskManager.getInstance().scheduleTask(new PostProcessingTask(),
+        SingleInstanceTaskManager.getInstance().scheduleTask(new PostProcessingTask(),
                                                        this.getClass().getName(),
                                                        runAt,
                                                        postProcessingDelay,

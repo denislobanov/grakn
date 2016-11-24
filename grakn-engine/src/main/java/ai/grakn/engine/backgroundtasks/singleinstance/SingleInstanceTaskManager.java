@@ -16,8 +16,12 @@
  * along with Grakn. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks;
+package ai.grakn.engine.backgroundtasks.singleinstance;
 
+import ai.grakn.engine.backgroundtasks.BackgroundTask;
+import ai.grakn.engine.backgroundtasks.StateStorage;
+import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
 import org.json.JSONObject;
@@ -32,15 +36,15 @@ import java.util.function.Consumer;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class InMemoryTaskManager implements TaskManager {
+public class SingleInstanceTaskManager implements TaskManager {
     private static String RUN_ONCE_NAME = "One off task scheduler.";
     private static String RUN_RECURRING_NAME = "Recurring task scheduler.";
     private static String EXCEPTION_CATCHER_NAME = "Task Exception Catcher.";
     private static String SAVE_CHECKPOINT_NAME = "Save task checkpoint.";
 
-    private static InMemoryTaskManager instance = null;
+    private static SingleInstanceTaskManager instance = null;
 
-    private final Logger LOG = LoggerFactory.getLogger(InMemoryTaskManager.class);
+    private final Logger LOG = LoggerFactory.getLogger(SingleInstanceTaskManager.class);
 
     private Map<String, Pair<ScheduledFuture<?>, BackgroundTask>> instantiatedTasks;
     private StateStorage stateStorage;
@@ -49,7 +53,7 @@ public class InMemoryTaskManager implements TaskManager {
     private ExecutorService executorService;
     private ScheduledExecutorService schedulingService;
 
-    private InMemoryTaskManager() {
+    private SingleInstanceTaskManager() {
         instantiatedTasks = new ConcurrentHashMap<>();
         stateStorage = InMemoryStateStorage.getInstance();
         stateUpdateLock = new ReentrantLock();
@@ -59,9 +63,9 @@ public class InMemoryTaskManager implements TaskManager {
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
     }
 
-    public static synchronized InMemoryTaskManager getInstance() {
+    public static synchronized SingleInstanceTaskManager getInstance() {
         if (instance == null)
-            instance = new InMemoryTaskManager();
+            instance = new SingleInstanceTaskManager();
         return instance;
     }
 

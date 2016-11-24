@@ -19,7 +19,7 @@
 package ai.grakn.engine.controller;
 
 import ai.grakn.engine.GraknEngineTestBase;
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
+import ai.grakn.engine.backgroundtasks.singleinstance.SingleInstanceTaskManager;
 import ai.grakn.engine.backgroundtasks.LongRunningTask;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TestTask;
@@ -48,7 +48,7 @@ public class TaskControllerTest extends GraknEngineTestBase {
 
     @Before
     public void setUp() throws Exception {
-        taskManager = InMemoryTaskManager.getInstance();
+        taskManager = SingleInstanceTaskManager.getInstance();
         singleTask = taskManager.scheduleTask(new LongRunningTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
         taskManager.stopTask(singleTask, this.getClass().getName());
     }

@@ -18,7 +18,7 @@
 
 package ai.grakn.engine.postprocessing;
 
-import ai.grakn.engine.backgroundtasks.InMemoryTaskManager;
+import ai.grakn.engine.backgroundtasks.singleinstance.SingleInstanceTaskManager;
 import ai.grakn.engine.GraknEngineTestBase;
 import org.junit.Assert;
 import org.junit.Before;
@@ -31,11 +31,11 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 
 public class PostProcessingTaskTest extends GraknEngineTestBase {
-    private InMemoryTaskManager taskManager;
+    private SingleInstanceTaskManager taskManager;
 
     @Before
     public void setUp() {
-        taskManager = InMemoryTaskManager.getInstance();
+        taskManager = SingleInstanceTaskManager.getInstance();
     }
 
     @Test

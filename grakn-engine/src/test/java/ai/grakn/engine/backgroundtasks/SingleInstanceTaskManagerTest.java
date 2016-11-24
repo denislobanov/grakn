@@ -19,6 +19,7 @@
 package ai.grakn.engine.backgroundtasks;
 
 import ai.grakn.engine.GraknEngineTestBase;
+import ai.grakn.engine.backgroundtasks.singleinstance.SingleInstanceTaskManager;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,12 +34,12 @@ import java.util.concurrent.TimeUnit;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static org.junit.Assert.*;
 
-public class InMemoryTaskManagerTest extends GraknEngineTestBase {
+public class SingleInstanceTaskManagerTest extends GraknEngineTestBase {
     private TaskManager taskManager;
 
     @Before
     public void setUp() {
-        taskManager = InMemoryTaskManager.getInstance();
+        taskManager = SingleInstanceTaskManager.getInstance();
     }
 
     @Test

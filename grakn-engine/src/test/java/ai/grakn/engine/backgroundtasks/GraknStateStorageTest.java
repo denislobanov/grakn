@@ -19,6 +19,7 @@
 package ai.grakn.engine.backgroundtasks;
 
 import ai.grakn.engine.GraknEngineTestBase;
+import ai.grakn.engine.backgroundtasks.distributed.GraknStateStorage;
 import javafx.util.Pair;
 import org.json.JSONObject;
 import org.junit.Before;
