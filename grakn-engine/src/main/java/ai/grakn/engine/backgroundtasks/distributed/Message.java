@@ -5,11 +5,11 @@ import org.json.JSONObject;
 
 import java.io.Serializable;
 
-public class WorkItem implements Serializable {
+public class Message implements Serializable {
     private TaskStatus status;
-    private String assignedWorker;
+    private JSONObject configuration;
 
-    public WorkItem status(TaskStatus status) {
+    public Message status(TaskStatus status) {
         this.status = status;
         return this;
     }
@@ -18,28 +18,29 @@ public class WorkItem implements Serializable {
         return status;
     }
 
-    public WorkItem assignedWorker(String assignedWorker) {
-        this.assignedWorker = assignedWorker;
+    public Message configuration(JSONObject configuration) {
+        this.configuration = configuration;
         return this;
     }
 
-    public String assignedWorker() {
-        return assignedWorker;
+    public JSONObject configuration() {
+        return configuration;
     }
+
 
     public String toString() {
         JSONObject out = new JSONObject()
                 .put("status", status.toString())
-                .put("assignedWorker", assignedWorker);
+                .put("configuration", configuration);
 
         return out.toString();
     }
 
-    public WorkItem(String serialised) {
+    public Message(String serialised) {
         JSONObject o = new JSONObject(serialised);
         status = TaskStatus.valueOf(o.getString("status"));
-        assignedWorker = o.getString("assignedWorker");
+        configuration = o.getJSONObject("configuration");
     }
 
-    public WorkItem() {}
+    public Message() {}
 }

@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.backgroundtasks;
 
-import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.engine.util.ConfigProperties;
 import javafx.util.Pair;
 import org.json.JSONObject;
@@ -58,8 +57,6 @@ public class InMemoryTaskManager implements TaskManager {
         ConfigProperties properties = ConfigProperties.getInstance();
         schedulingService = Executors.newScheduledThreadPool(1);
         executorService = Executors.newFixedThreadPool(properties.getAvailableThreads());
-
-        Executors.newSingleThreadExecutor().execute(new TaskRunner());
     }
 
     public static synchronized InMemoryTaskManager getInstance() {
