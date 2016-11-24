@@ -20,6 +20,7 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 public class ZookeeperConfig {
 
-    public static final String ZOOKEEPER_URL = "localhost:2128";
+    public static final String ZOOKEEPER_URL = "127.0.0.1";
+    public static final String SCHEDULER_PATH = "/scheduler";
 
 }

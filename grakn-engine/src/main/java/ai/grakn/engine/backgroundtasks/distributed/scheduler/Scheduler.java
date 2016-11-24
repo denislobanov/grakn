@@ -22,7 +22,9 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.POLL_FREQUENCY;
@@ -34,37 +36,30 @@ import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.workQueueC
  * Monitor new tasks queue to add them to ScheduledExecutorService.
  * ScheduledExecutorService will be given a function to add the task in question to the work queue.
  */
-public class Scheduler {
+public class Scheduler implements Runnable {
 
+    private KafkaConsumer<String, String> consumer;
+    private ScheduledExecutorService schedulingService = Executors.newScheduledThreadPool(1);
 
+    public Scheduler(){
 
-
-
-
-
+        // Listen to Kafka
+        consumer = new KafkaConsumer<>(workQueueConsumer());
+        consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC));
+    }
 
     /**
-     * Listen for tasks that are added to the newTasks topic
+     *
      */
-    public class SchedulerConsumer implements Runnable {
+    public void run() {
+        try {
+            ConsumerRecords<String, String> records = consumer.poll(POLL_FREQUENCY);
 
-        private KafkaConsumer<String, String> consumer;
-
-        public SchedulerConsumer(){
-            consumer = new KafkaConsumer<String, String>(workQueueConsumer());
-            consumer.subscribe(Arrays.asList(NEW_TASKS_TOPIC));
-        }
-
-        public void run() {
-            try {
-                ConsumerRecords<String, String> records = consumer.poll(POLL_FREQUENCY);
-
-                for(ConsumerRecord record:records){
-                    System.out.println(record);
-                }
-            } finally {
-                consumer.close();
+            for(ConsumerRecord record:records){
+                System.out.println(record);
             }
+        } finally {
+            consumer.close();
         }
     }
 }
