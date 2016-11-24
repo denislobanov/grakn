@@ -16,52 +16,31 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.backgroundtasks.distributed.scheduler;
 
-import ai.grakn.engine.backgroundtasks.BackgroundTask;
-import ai.grakn.engine.backgroundtasks.StateStorage;
-import ai.grakn.engine.backgroundtasks.TaskManager;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.json.JSONObject;
-
-import java.util.Date;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static ai.grakn.engine.backgroundtasks.distributed.ZookeeperConfig.ZOOKEEPER_URL;
+import static ai.grakn.engine.backgroundtasks.distributed.ZookeeperConfig.SCHEDULER_PATH;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 
-/**
- * Class to manage tasks distributed using Kafka.
- */
-public class DistributedTaskManager implements TaskManager, AutoCloseable {
+public class SchedulerClientTest {
 
-    public static CuratorFramework zookeeperClient;
+    public static CuratorFramework zookeeperClient = newClient(ZOOKEEPER_URL, new ExponentialBackoffRetry(1000, 0));
 
-    /**
-     * Instantiate connection with Zookeeper.
-     */
-    public DistributedTaskManager(){
-        zookeeperClient = newClient(ZOOKEEPER_URL, new ExponentialBackoffRetry(1000, 0));
+    @BeforeClass
+    public static void startZookeeperClient(){
         zookeeperClient.start();
     }
 
-    @Override
-    public void close(){
-        zookeeperClient.close();
-    }
+    @Test
+    public void testOnlyOneNode() throws Exception {
+        SchedulerClient scheduler = new SchedulerClient(zookeeperClient, SCHEDULER_PATH, "0");
+        scheduler.start();
 
-    @Override
-    public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
-        return null;
-    }
-
-    @Override
-    public TaskManager stopTask(String id, String requesterName) {
-        return null;
-    }
-
-    @Override
-    public StateStorage storage() {
-        return null;
+        Thread.sleep(100000);
     }
 }
