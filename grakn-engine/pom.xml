@@ -81,6 +81,17 @@
             <artifactId>kafka-clients</artifactId>
             <version>0.10.1.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-recipes</artifactId>
+            <version>3.2.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-test</artifactId>
+            <scope>test</scope>
+            <version>3.2.1</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
