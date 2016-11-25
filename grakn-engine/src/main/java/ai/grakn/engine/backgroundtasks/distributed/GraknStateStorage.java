@@ -20,7 +20,6 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
-import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.backgroundtasks.StateStorage;
@@ -143,7 +142,6 @@ public class GraknStateStorage implements StateStorage {
         } catch(GraknValidationException e) {
             e.printStackTrace();
         }
-        System.out.println("updated state");
     }
 
     public TaskState getState(String id) {

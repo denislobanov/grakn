@@ -37,16 +37,12 @@ public class TaskRunner implements Runnable {
                 ConsumerRecords<String, String> records = consumer.poll(500);
 
                 if(!records.isEmpty()) {
-                    LOG.debug("got "+records.count()+"records");
                     System.out.println("got "+records.count()+"records");
 
                     // TODO: use ZK to mark entries as executing, find first thats not being run.
                     for(ConsumerRecord<String, String> r: records) {
 
-                        System.out.println("record key: "+r.key());
-
                         if(markAsRunning(r.key())) {
-                            System.out.println("i am in if");
                             runTask(r.key(), TaskState.deserialize(r.value()));
                         }
                     }
@@ -78,17 +74,12 @@ public class TaskRunner implements Runnable {
             hostname = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException ignored) {}
 
-        LOG.debug("Marking task "+id+" as RUNNING, "+hostname);
-        System.out.println("Marking task "+id+" as RUNNING, "+hostname);
         stateStorage.updateState(id, RUNNING, this.getClass().getName(), hostname, null, null, null);
-        System.out.println("i am after update");
         return true;
     }
 
     private void runTask(String id, TaskState state) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-        System.out.println(state);
-        System.out.println("running task: "+state.taskClassName());
-        LOG.debug("running task "+state.taskClassName());
+        System.out.println("running task: "+id);
 
         // Instantiate task
         Class<?> c = Class.forName(state.taskClassName());
