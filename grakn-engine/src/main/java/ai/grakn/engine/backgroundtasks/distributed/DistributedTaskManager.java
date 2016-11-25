@@ -101,7 +101,6 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
     @Override
     public TaskManager stopTask(String id, String requesterName) {
         throw new UnsupportedOperationException(this.getClass().getName()+" currently doesnt support stopping tasks");
-        return null;
     }
 
     @Override
