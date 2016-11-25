@@ -27,7 +27,7 @@ import org.json.JSONObject;
 
 import java.util.Date;
 
-import static ai.grakn.engine.backgroundtasks.distributed.ZookeeperConfig.ZOOKEEPER_URL;
+import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.ZOOKEEPER_URL;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 
 /**

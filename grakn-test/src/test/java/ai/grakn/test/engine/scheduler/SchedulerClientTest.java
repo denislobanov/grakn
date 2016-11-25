@@ -16,15 +16,16 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed.scheduler;
+package ai.grakn.test.engine.scheduler;
 
+import ai.grakn.engine.backgroundtasks.distributed.scheduler.SchedulerClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static ai.grakn.engine.backgroundtasks.distributed.ZookeeperConfig.ZOOKEEPER_URL;
-import static ai.grakn.engine.backgroundtasks.distributed.ZookeeperConfig.SCHEDULER_PATH;
+import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.SCHEDULER_PATH;
+import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.ZOOKEEPER_URL;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 
 public class SchedulerClientTest {
@@ -43,4 +44,5 @@ public class SchedulerClientTest {
 
         Thread.sleep(100000);
     }
+
 }

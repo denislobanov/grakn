@@ -44,7 +44,7 @@ public class TaskRunner implements Runnable {
                         System.out.println("record key: "+r.key());
 
                         if(markAsRunning(r.key())) {
-                            runTask(r.key(), new Message(r.value()));
+                            runTask(r.key(), new KafkaMessage(r.value()));
                         }
                     }
                 }

@@ -3,9 +3,9 @@ package ai.grakn.test.engine;
 import ai.grakn.engine.backgroundtasks.distributed.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import ai.grakn.engine.backgroundtasks.distributed.KafkaConfig;
+import ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.engine.backgroundtasks.distributed.Message;
+import ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaMessage;
 import ai.grakn.test.AbstractEngineTest;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.WORK_QUEUE_TOPIC;
+import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.WORK_QUEUE_TOPIC;
 
 public class TaskRunnerKafkaTest extends AbstractEngineTest {
     private KafkaProducer<String, String> producer;
@@ -48,7 +48,7 @@ public class TaskRunnerKafkaTest extends AbstractEngineTest {
             assert (id != null);
 
             producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id,
-                    new Message()
+                    new KafkaMessage()
                             .status(TaskStatus.SCHEDULED)
                             .configuration(config)
                             .toString()

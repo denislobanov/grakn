@@ -19,14 +19,6 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.TaskStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Optional;
-
-import static ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager.zookeeperClient;
-import static ai.grakn.engine.backgroundtasks.distributed.ZookeeperConfig.EXECUTOR_PATH;
-import static java.lang.String.format;
 
 /**
  * State to be stored in Zookeeper

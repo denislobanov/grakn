@@ -1,4 +1,4 @@
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.backgroundtasks.distributed.kafka;
 
 import java.util.Properties;
 

@@ -20,12 +20,28 @@ package ai.grakn.engine.backgroundtasks;
 
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.util.Date;
+
+import static ai.grakn.engine.util.SystemOntologyElements.SCHEDULED_TASK;
+import static ai.grakn.engine.util.SystemOntologyElements.STATUS;
+import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_TIME;
+import static ai.grakn.engine.util.SystemOntologyElements.STATUS_CHANGE_BY;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_CLASS_NAME;
+import static ai.grakn.engine.util.SystemOntologyElements.CREATED_BY;
+import static ai.grakn.engine.util.SystemOntologyElements.EXECUTING_HOSTNAME;
+import static ai.grakn.engine.util.SystemOntologyElements.RUN_AT;
+import static ai.grakn.engine.util.SystemOntologyElements.RECURRING;
+import static ai.grakn.engine.util.SystemOntologyElements.RECUR_INTERVAL;
+import static ai.grakn.engine.util.SystemOntologyElements.STACK_TRACE;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_EXCEPTION;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_CHECKPOINT;
+import static ai.grakn.engine.util.SystemOntologyElements.TASK_CONFIGURATION;
 
 /**
  * Internal task state model used to keep track of scheduled tasks.
  */
-public class TaskState implements Cloneable {
+public class TaskState implements Cloneable, Serializable {
     /**
      * Task status, @see TaskStatus.
      */
@@ -210,5 +226,42 @@ public class TaskState implements Cloneable {
              .configuration(new JSONObject(configuration.toString()));
 
         return state;
+    }
+
+    /**
+     * Serialize all the of the state into a json object
+     * @return the serialized json object
+     */
+    public String serialize(){
+        JSONObject json = new JSONObject();
+        json.put(STATUS, status);
+        json.put(STATUS_CHANGE_TIME, statusChangeTime);
+        json.put(CREATED_BY, creator);
+        json.put(TASK_CLASS_NAME, taskClassName);
+        json.put(EXECUTING_HOSTNAME, executingHostname);
+        json.put(RUN_AT, runAt);
+        json.put(RECURRING, recurring);
+        json.put(RECUR_INTERVAL, interval);
+        json.put(STACK_TRACE, stackTrace);
+        json.put(TASK_EXCEPTION, exception);
+        json.put(TASK_CHECKPOINT, taskCheckpoint);
+        json.put(TASK_CONFIGURATION, configuration);
+        return json.toString();
+    }
+
+    public static TaskState deserialize(JSONObject json){
+        TaskState state = new TaskState(json.getString(TASK_CLASS_NAME));
+
+        return state.status(TaskStatus.valueOf(json.getString(STATUS)))
+//                .statusChangeTime(json.getString(STATUS_CHANGE_TIME))
+                .creator(json.getString(CREATED_BY))
+                .executingHostname(json.getString(EXECUTING_HOSTNAME))
+                .runAt(new Date(json.getLong(RUN_AT)))
+                .isRecurring(json.getBoolean(RECURRING))
+                .interval(json.getLong(RECUR_INTERVAL))
+                .stackTrace(json.getString(STACK_TRACE))
+                .exception(json.getString(TASK_EXCEPTION))
+                .checkpoint(json.getString(TASK_CHECKPOINT))
+                .configuration(json.getJSONObject(TASK_CONFIGURATION));
     }
 }

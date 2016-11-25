@@ -15,5 +15,4 @@ public interface SystemOntologyElements {
     String TASK_EXCEPTION = "task-exception";
     String TASK_CHECKPOINT = "task-checkpoint";
     String TASK_CONFIGURATION = "task-configuration";
-
 }

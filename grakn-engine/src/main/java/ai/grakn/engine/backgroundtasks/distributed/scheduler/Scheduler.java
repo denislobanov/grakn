@@ -21,14 +21,16 @@ package ai.grakn.engine.backgroundtasks.distributed.scheduler;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
 
 import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.POLL_FREQUENCY;
-import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.workQueueConsumer;
+import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.POLL_FREQUENCY;
+import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueConsumer;
+import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueProducer;
 
 /**
  *
@@ -39,13 +41,17 @@ import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.workQueueC
 public class Scheduler implements Runnable {
 
     private KafkaConsumer<String, String> consumer;
+    private KafkaProducer<String, String> producer;
     private ScheduledExecutorService schedulingService = Executors.newScheduledThreadPool(1);
 
     public Scheduler(){
 
-        // Listen to Kafka
+        // Kafka listener
         consumer = new KafkaConsumer<>(workQueueConsumer());
         consumer.subscribe(Collections.singletonList(NEW_TASKS_TOPIC));
+
+        // Kafka writer
+        producer = new KafkaProducer<>(workQueueProducer());
     }
 
     /**

@@ -16,7 +16,7 @@
  * along with MindmapsDB. If not, see <http://www.gnu.org/licenses/gpl.txt>.
  */
 
-package ai.grakn.engine.backgroundtasks.distributed;
+package ai.grakn.engine.backgroundtasks.distributed.zookeeper;
 
 public class ZookeeperConfig {
 
