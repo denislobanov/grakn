@@ -18,17 +18,26 @@
 
 package ai.grakn.engine.backgroundtasks.distributed.scheduler;
 
+import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.util.Collections;
+import java.util.Date;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.POLL_FREQUENCY;
+import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueConsumer;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueProducer;
 
@@ -58,15 +67,56 @@ public class Scheduler implements Runnable {
      *
      */
     public void run() {
-        try {
-            ConsumerRecords<String, String> records = consumer.poll(POLL_FREQUENCY);
+        while(true) {
+            try {
+                ConsumerRecords<String, String> records = consumer.poll(POLL_FREQUENCY);
 
-            for(ConsumerRecord record:records){
-                System.out.println(record);
+                for (ConsumerRecord record : records) {
+                    TaskState task = TaskState.deserialize(record.value().toString());
+
+                    scheduleTask(task);
+                }
+
+                Thread.sleep(500);
+
+            } catch (InterruptedException e){
+                e.printStackTrace();
+                break;
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                consumer.close();
             }
-        } finally {
-            consumer.close();
         }
+    }
+
+    //TODO update status in zookeeper and graph
+    /**
+     * Schedule a task to be submitted to the work queue when it is supposed to be run
+     * @param task task to be scheduled
+     */
+    private void scheduleTask(TaskState task){
+        task.status(SCHEDULED);
+
+        Runnable submit = () -> submitToWorkQueue(task);
+        long delay = new Date().getTime() - task.runAt().getTime();
+
+        if(task.isRecurring()) {
+            schedulingService.scheduleAtFixedRate(submit, delay, task.interval(), MILLISECONDS);
+        } else {
+            schedulingService.schedule(submit, delay, MILLISECONDS);
+        }
+
+        System.out.println("Scheduled " + task);
+    }
+
+    //TODO do not use random UUID
+    /**
+     * Submit a task to the work queue
+     * @param task task to be submitted
+     */
+    private void submitToWorkQueue(TaskState task){
+        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, UUID.randomUUID().toString(), task.serialize()));
     }
 }
 

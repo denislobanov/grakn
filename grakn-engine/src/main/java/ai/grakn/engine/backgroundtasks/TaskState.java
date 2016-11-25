@@ -161,7 +161,7 @@ public class TaskState implements Cloneable, Serializable {
     }
 
     public Boolean isRecurring() {
-        return recurring;
+        return recurring != null ? recurring : false;
     }
 
     public TaskState interval(long interval) {
@@ -239,7 +239,7 @@ public class TaskState implements Cloneable, Serializable {
         json.put(CREATED_BY, creator);
         json.put(TASK_CLASS_NAME, taskClassName);
         json.put(EXECUTING_HOSTNAME, executingHostname);
-        json.put(RUN_AT, runAt);
+        json.put(RUN_AT, runAt != null ? runAt.getTime() : null);
         json.put(RECURRING, recurring);
         json.put(RECUR_INTERVAL, interval);
         json.put(STACK_TRACE, stackTrace);
@@ -249,19 +249,40 @@ public class TaskState implements Cloneable, Serializable {
         return json.toString();
     }
 
-    public static TaskState deserialize(JSONObject json){
+    public static TaskState deserialize(String serialized){
+        JSONObject json = new JSONObject(serialized);
         TaskState state = new TaskState(json.getString(TASK_CLASS_NAME));
 
-        return state.status(TaskStatus.valueOf(json.getString(STATUS)))
-//                .statusChangeTime(json.getString(STATUS_CHANGE_TIME))
-                .creator(json.getString(CREATED_BY))
-                .executingHostname(json.getString(EXECUTING_HOSTNAME))
-                .runAt(new Date(json.getLong(RUN_AT)))
-                .isRecurring(json.getBoolean(RECURRING))
-                .interval(json.getLong(RECUR_INTERVAL))
-                .stackTrace(json.getString(STACK_TRACE))
-                .exception(json.getString(TASK_EXCEPTION))
-                .checkpoint(json.getString(TASK_CHECKPOINT))
-                .configuration(json.getJSONObject(TASK_CONFIGURATION));
+        state.status(TaskStatus.valueOf(json.getString(STATUS)));
+        if(json.has(CREATED_BY)) state.creator(json.getString(CREATED_BY));
+        if(json.has(EXECUTING_HOSTNAME)) state.executingHostname(json.getString(EXECUTING_HOSTNAME));
+        if(json.has(RUN_AT)) state.runAt(new Date(json.getLong(RUN_AT)));
+        if(json.has(RECURRING)) state.isRecurring(json.getBoolean(RECURRING));
+        if(json.has(RECUR_INTERVAL)) state.interval(json.getLong(RECUR_INTERVAL));
+        if(json.has(STACK_TRACE)) state.stackTrace(json.getString(STACK_TRACE));
+        if(json.has(TASK_EXCEPTION)) state.exception(json.getString(TASK_EXCEPTION));
+        if(json.has(TASK_CHECKPOINT)) state.checkpoint(json.getString(TASK_CHECKPOINT));
+        if(json.has(TASK_CONFIGURATION)) state.configuration(json.getJSONObject(TASK_CONFIGURATION));
+
+        return state;
+    }
+
+    @Override
+    public String toString() {
+        return "TaskState{" +
+                "status=" + status +
+                ", statusChangeTime=" + statusChangeTime +
+                ", statusChangedBy='" + statusChangedBy + '\'' +
+                ", taskClassName='" + taskClassName + '\'' +
+                ", creator='" + creator + '\'' +
+                ", executingHostname='" + executingHostname + '\'' +
+                ", runAt=" + runAt +
+                ", recurring=" + recurring +
+                ", interval=" + interval +
+                ", stackTrace='" + stackTrace + '\'' +
+                ", exception='" + exception + '\'' +
+                ", taskCheckpoint='" + taskCheckpoint + '\'' +
+                ", configuration=" + configuration +
+                '}';
     }
 }

@@ -1,6 +1,7 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.*;
+import ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaMessage;
 import ai.grakn.engine.util.ConfigProperties;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -14,7 +15,7 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
-import static ai.grakn.engine.backgroundtasks.distributed.KafkaConfig.*;
+import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.*;
 
 public class TaskRunner implements Runnable {
     private final Logger LOG = LoggerFactory.getLogger(TaskRunner.class);
@@ -81,7 +82,7 @@ public class TaskRunner implements Runnable {
         return true;
     }
 
-    private void runTask(String id, Message message) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+    private void runTask(String id, KafkaMessage message) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
         // State contains class name
         TaskState state = stateStorage.getState(id);
 

@@ -1,11 +1,12 @@
 package ai.grakn.test.engine;
 
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.distributed.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaMessage;
+//import ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaMessage;
 import ai.grakn.test.AbstractEngineTest;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -48,12 +49,13 @@ public class TaskRunnerKafkaTest extends AbstractEngineTest {
             assert (id != null);
 
             producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, id,
-                    new KafkaMessage()
+                    new TaskState(TestTask.class.getName())
                             .status(TaskStatus.SCHEDULED)
                             .configuration(config)
                             .toString()
             ));
             producer.flush();
+            System.out.println("sent");
         }
 
         producer.close();
