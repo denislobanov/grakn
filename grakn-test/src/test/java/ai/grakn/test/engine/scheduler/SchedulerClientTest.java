@@ -18,15 +18,16 @@
 
 package ai.grakn.test.engine.scheduler;
 
+import ai.grakn.engine.backgroundtasks.distributed.scheduler.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.scheduler.SchedulerClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.SCHEDULER_PATH;
 import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.ZOOKEEPER_URL;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
+import static org.junit.Assert.assertNotEquals;
 
 public class SchedulerClientTest {
 
@@ -38,11 +39,19 @@ public class SchedulerClientTest {
     }
 
     @Test
-    public void testOnlyOneNode() throws Exception {
-        SchedulerClient scheduler = new SchedulerClient(zookeeperClient, SCHEDULER_PATH, "0");
-        scheduler.start();
+    public void testSchedulerRestartsAfterKilled() throws Exception {
+        SchedulerClient schedulerClient = new SchedulerClient(zookeeperClient);
+        schedulerClient.start();
 
-        Thread.sleep(100000);
+        Thread.sleep(3000);
+
+        Scheduler scheduler1 = schedulerClient.getScheduler();
+
+        // Kill scheduler- client should create a new one
+        scheduler1.setRunning(false);
+        Thread.sleep(3000);
+
+        Scheduler scheduler2 = schedulerClient.getScheduler();
+        assertNotEquals(scheduler1, scheduler2);
     }
-
 }

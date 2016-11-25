@@ -18,6 +18,7 @@
 
 package ai.grakn.engine.backgroundtasks.distributed.scheduler;
 
+import ai.grakn.engine.util.ConfigProperties;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
@@ -27,10 +28,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.SCHEDULER_PATH;
 
 /**
  * Scheduler will be constantly running on the "Leader" machine. The "takeLeadership"
@@ -43,12 +48,17 @@ public class SchedulerClient extends LeaderSelectorListenerAdapter implements Cl
     private final String name;
     private final LeaderSelector leaderSelector;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private Scheduler scheduler;
 
-    public SchedulerClient(CuratorFramework client, String path, String name) {
-        this.name = name;
+    public SchedulerClient(CuratorFramework client) {
+        try {
+            this.name = InetAddress.getLocalHost().getHostName();
 
-        leaderSelector = new LeaderSelector(client, path, this);
-        leaderSelector.autoRequeue();
+            leaderSelector = new LeaderSelector(client, SCHEDULER_PATH, this);
+            leaderSelector.autoRequeue();
+        } catch (UnknownHostException e){
+            throw new RuntimeException("Could not get current host.");
+        }
     }
 
     public void start() throws IOException {
@@ -62,16 +72,28 @@ public class SchedulerClient extends LeaderSelectorListenerAdapter implements Cl
     }
 
     /**
-     * When you take over leadership start a new Scheduler instance and wait for it to complete
-     * @param curatorFramework
+     * When you take over leadership start a new Scheduler instance and wait for it to complete.
      * @throws Exception
      */
     public void takeLeadership(CuratorFramework curatorFramework) throws Exception {
         LOG.info(name + " has taken over the scheduler");
 
-        waitOnScheduler(executor.submit(() -> new Scheduler().run()));
+        scheduler = new Scheduler();
+        waitOnScheduler(executor.submit(scheduler::run));
     }
 
+    /**
+     * Get the scheduler object
+     * @return scheduler
+     */
+    public Scheduler getScheduler(){
+        return scheduler;
+    }
+
+    /**
+     * Wait for the scheduler to finish
+     * @param future future to wait on
+     */
     private void waitOnScheduler(Future future){
         try {
             future.get();

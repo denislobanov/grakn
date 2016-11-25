@@ -21,10 +21,12 @@ package ai.grakn.engine.backgroundtasks.distributed;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.distributed.scheduler.SchedulerClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.Date;
 
 import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.ZOOKEEPER_URL;
@@ -41,8 +43,16 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
      * Instantiate connection with Zookeeper.
      */
     public DistributedTaskManager(){
-        zookeeperClient = newClient(ZOOKEEPER_URL, new ExponentialBackoffRetry(1000, 0));
-        zookeeperClient.start();
+        try {
+            zookeeperClient = newClient(ZOOKEEPER_URL, new ExponentialBackoffRetry(1000, 0));
+            zookeeperClient.start();
+
+            // start sheduler client to add self to leader election pool
+            SchedulerClient schedulerClient = new SchedulerClient(zookeeperClient);
+            schedulerClient.start();
+        } catch (IOException e){
+            throw new RuntimeException("Count not start scheduler client");
+        }
     }
 
     @Override
