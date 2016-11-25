@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
-import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 
 import static ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager.zookeeperClient;
-import static ai.grakn.engine.backgroundtasks.distributed.ZookeeperConfig.STATE_PATH;
 import static ai.grakn.engine.backgroundtasks.distributed.ZookeeperConfig.EXECUTOR_PATH;
 import static java.lang.String.format;
 
@@ -34,66 +32,34 @@ import static java.lang.String.format;
  * State to be stored in Zookeeper
  */
 public class SynchronizedState {
-
-    private static final Logger LOG = LoggerFactory.getLogger(SynchronizedState.class);
-
     private String taskId;
-    private TaskStatus state;
-    private String acceptedExecutor;
+    private TaskStatus status;
+    private String executingHostname;
 
-    public SynchronizedState(String taskId, String executor, TaskStatus state){
+    public SynchronizedState taskId(String taskId) {
         this.taskId = taskId;
-        this.acceptedExecutor = executor;
-        this.state = state;
+        return this;
     }
 
-    public String getTaskId() {
+    public String taskId() {
         return taskId;
     }
 
-    public void setTaskId(String taskId) {
-        this.taskId = taskId;
+    public SynchronizedState status(TaskStatus status) {
+        this.status = status;
+        return this;
     }
 
-    public TaskState getState() {
-        return state;
+    public TaskStatus status() {
+        return status;
     }
 
-    public String getAcceptedExecutor() {
-        return acceptedExecutor;
+    public SynchronizedState executingHostname(String executingHostname) {
+        this.executingHostname = executingHostname;
+        return this;
     }
 
-    public void setAcceptedExecutor(String acceptedExecutor) {
-        this.acceptedExecutor = acceptedExecutor;
-    }
-
-    /**
-     *
-     */
-    public void storeState(){
-
-    }
-
-    /**
-     * Return a SynchronizedState representing this state stored in zookeeper
-     * @param id id of tasks to retrieve
-     * @return SynchrionizedState for given ID
-     */
-    public static Optional<SynchronizedState> getStateFromZookeeper(String id){
-
-        try {
-            String executor = getStringFromZookeeper(format(EXECUTOR_PATH, id));
-//            TaskStatus state = getStringFromZookeeper(format(STATE_PATH, id));
-
-            return Optional.of(new SynchronizedState(id, executor, null));
-        } catch (Exception e){
-            LOG.error("Could to retrieve state of " + id);
-        }
-
-        return Optional.empty();
-    }
-
-    private static String getStringFromZookeeper(String path) throws Exception {
-        return new String(zookeeperClient.getData().forPath(path));
+    public String executingHostname() {
+        return executingHostname;
     }
 }
