@@ -44,7 +44,7 @@ public class TaskRunner implements Runnable {
                         System.out.println("record key: "+r.key());
 
                         if(markAsRunning(r.key())) {
-//                            runTask(r.key(), new KafkaMessage(r.value()));
+                            runTask(r.key(), TaskState.deserialize(r.value()));
                         }
                     }
                 }
@@ -53,9 +53,9 @@ public class TaskRunner implements Runnable {
                 }
 
             }
-//            catch (ClassNotFoundException | InstantiationException | IllegalAccessException ignored) {
+            catch (ClassNotFoundException | InstantiationException | IllegalAccessException ignored) {
 //                // Try next task
-//            }
+            }
             catch (InterruptedException e) {
                 break;
             }
@@ -81,19 +81,16 @@ public class TaskRunner implements Runnable {
         return true;
     }
 
-//    private void runTask(String id, Message message) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-//        // State contains class name
-//        TaskState state = stateStorage.getState(id);
-//
-//        System.out.println("running task: "+state.taskClassName());
-//        LOG.debug("running task "+state.taskClassName());
-//
-//        // Instantiate task
-//        Class<?> c = Class.forName(state.taskClassName());
-//        BackgroundTask task = (BackgroundTask) c.newInstance();
-//
-//        task.start(saveCheckpoint(id), message.configuration());
-//    }
+    private void runTask(String id, TaskState state) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+        System.out.println("running task: "+state.taskClassName());
+        LOG.debug("running task "+state.taskClassName());
+
+        // Instantiate task
+        Class<?> c = Class.forName(state.taskClassName());
+        BackgroundTask task = (BackgroundTask) c.newInstance();
+
+        task.start(saveCheckpoint(id), state.configuration());
+    }
 
     private Consumer<String> saveCheckpoint(String id) {
         return checkpoint -> {
