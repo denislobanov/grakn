@@ -21,15 +21,19 @@ package ai.grakn.engine.backgroundtasks.distributed;
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
+import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.distributed.scheduler.SchedulerClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.concurrent.Executors;
 
+import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.ZOOKEEPER_URL;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueProducer;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
@@ -63,6 +67,9 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
 
             // Persisted storage in grakn graph
             storage = new GraknStateStorage();
+
+            // Start TaskRunner
+            Executors.newSingleThreadExecutor().execute(new TaskRunner());
         } catch (IOException e){
             throw new RuntimeException("Count not start scheduler client");
         }
@@ -75,11 +82,25 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
 
     @Override
     public String scheduleTask(BackgroundTask task, String createdBy, Date runAt, long period, JSONObject configuration) {
-        return null;
+        Boolean recurring = period > 0;
+
+        String id = storage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
+        TaskState state = new TaskState(task.getClass().getName())
+                .creator(createdBy)
+                .runAt(runAt)
+                .isRecurring(recurring)
+                .interval(period)
+                .configuration(configuration);
+
+        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, id, state.serialize()));
+        producer.flush();
+
+        return id;
     }
 
     @Override
     public TaskManager stopTask(String id, String requesterName) {
+        throw new UnsupportedOperationException(this.getClass().getName()+" currently doesnt support stopping tasks");
         return null;
     }
 

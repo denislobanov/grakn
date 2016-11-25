@@ -55,7 +55,7 @@ public class TaskRunnerKafkaTest extends AbstractEngineTest {
                             .serialize()
             ));
             producer.flush();
-            System.out.println("sent");
+            System.out.println("sent "+id);
         }
 
         producer.close();

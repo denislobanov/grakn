@@ -126,8 +126,6 @@ public class GraknStateStorage implements StateStorage {
             resources.has(TASK_CONFIGURATION, configuration.toString());
         }
 
-        System.out.println("going to delete");
-
         try(GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME)){
 
             System.out.println(graph.getConcept(id));
@@ -137,19 +135,15 @@ public class GraknStateStorage implements StateStorage {
                     .delete(deleters)
                     .execute();
 
-            System.out.println("deleted, going to add new");
-
             // Insert new resources with new values.
             graph.graql().insert(resources)
                     .execute();
 
-            System.out.println("done, committing");
             graph.commit();
         } catch(GraknValidationException e) {
             e.printStackTrace();
-            System.out.println("what");
         }
-        System.out.println("done");
+        System.out.println("updated state");
     }
 
     public TaskState getState(String id) {
