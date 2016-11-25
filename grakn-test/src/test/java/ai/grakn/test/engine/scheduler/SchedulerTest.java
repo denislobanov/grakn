@@ -25,7 +25,6 @@ import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.engine.TestTask;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,9 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.NEW_TASKS_TOPIC;
-import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueConsumer;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueProducer;
 
 public class SchedulerTest extends AbstractEngineTest {

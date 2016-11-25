@@ -1,7 +1,6 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.*;
-import ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaMessage;
 import ai.grakn.engine.util.ConfigProperties;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -45,7 +44,7 @@ public class TaskRunner implements Runnable {
                         System.out.println("record key: "+r.key());
 
                         if(markAsRunning(r.key())) {
-                            runTask(r.key(), new KafkaMessage(r.value()));
+//                            runTask(r.key(), new KafkaMessage(r.value()));
                         }
                     }
                 }
@@ -54,9 +53,9 @@ public class TaskRunner implements Runnable {
                 }
 
             }
-            catch (ClassNotFoundException | InstantiationException | IllegalAccessException ignored) {
-                // Try next task
-            }
+//            catch (ClassNotFoundException | InstantiationException | IllegalAccessException ignored) {
+//                // Try next task
+//            }
             catch (InterruptedException e) {
                 break;
             }
@@ -82,19 +81,19 @@ public class TaskRunner implements Runnable {
         return true;
     }
 
-    private void runTask(String id, KafkaMessage message) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-        // State contains class name
-        TaskState state = stateStorage.getState(id);
-
-        System.out.println("running task: "+state.taskClassName());
-        LOG.debug("running task "+state.taskClassName());
-
-        // Instantiate task
-        Class<?> c = Class.forName(state.taskClassName());
-        BackgroundTask task = (BackgroundTask) c.newInstance();
-
-        task.start(saveCheckpoint(id), message.configuration());
-    }
+//    private void runTask(String id, Message message) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+//        // State contains class name
+//        TaskState state = stateStorage.getState(id);
+//
+//        System.out.println("running task: "+state.taskClassName());
+//        LOG.debug("running task "+state.taskClassName());
+//
+//        // Instantiate task
+//        Class<?> c = Class.forName(state.taskClassName());
+//        BackgroundTask task = (BackgroundTask) c.newInstance();
+//
+//        task.start(saveCheckpoint(id), message.configuration());
+//    }
 
     private Consumer<String> saveCheckpoint(String id) {
         return checkpoint -> {

@@ -41,8 +41,10 @@ import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.WORK
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueConsumer;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueProducer;
 
+//TODO read recurring tasks from the graph on init
+//TODO persist state to zookeeper and graph
+//TODO polling task runners to see who is alive and pickup their tasks
 /**
- *
  * Handle execution of recurring tasks.
  * Monitor new tasks queue to add them to ScheduledExecutorService.
  * ScheduledExecutorService will be given a function to add the task in question to the work queue.
@@ -72,9 +74,10 @@ public class Scheduler implements Runnable {
                 ConsumerRecords<String, String> records = consumer.poll(POLL_FREQUENCY);
 
                 for (ConsumerRecord record : records) {
+                    String taskId = record.key().toString();
                     TaskState task = TaskState.deserialize(record.value().toString());
 
-                    scheduleTask(task);
+                    scheduleTask(taskId, task);
                 }
 
                 Thread.sleep(500);
@@ -93,12 +96,13 @@ public class Scheduler implements Runnable {
     //TODO update status in zookeeper and graph
     /**
      * Schedule a task to be submitted to the work queue when it is supposed to be run
+     * @param taskId id of the task to be scheduled
      * @param task task to be scheduled
      */
-    private void scheduleTask(TaskState task){
+    private void scheduleTask(String taskId, TaskState task){
         task.status(SCHEDULED);
 
-        Runnable submit = () -> submitToWorkQueue(task);
+        Runnable submit = () -> submitToWorkQueue(taskId, task);
         long delay = new Date().getTime() - task.runAt().getTime();
 
         if(task.isRecurring()) {
@@ -107,16 +111,16 @@ public class Scheduler implements Runnable {
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
 
-        System.out.println("Scheduled " + task);
+        System.out.println("Scheduled " + taskId);
     }
 
-    //TODO do not use random UUID
     /**
      * Submit a task to the work queue
+     * @param taskId id of the task to be submitted
      * @param task task to be submitted
      */
-    private void submitToWorkQueue(TaskState task){
-        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, UUID.randomUUID().toString(), task.serialize()));
+    private void submitToWorkQueue(String taskId, TaskState task){
+        producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, taskId, task.serialize()));
     }
 }
 
