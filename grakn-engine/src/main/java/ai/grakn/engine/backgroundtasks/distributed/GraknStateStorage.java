@@ -20,6 +20,7 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
 import ai.grakn.engine.backgroundtasks.StateStorage;
@@ -28,6 +29,7 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
+import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
 import javafx.util.Pair;
@@ -45,11 +47,7 @@ public class GraknStateStorage implements StateStorage {
     private final static String TASK_VAR = "task";
 
     private final Logger LOG = LoggerFactory.getLogger(GraknStateStorage.class);
-    private GraknGraph graph;
-
-    public GraknStateStorage() {
-        graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
-    }
+    public GraknStateStorage() {}
 
     public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, JSONObject configuration) {
         if(taskName == null || createdBy == null || runAt == null || recurring == null)
@@ -66,20 +64,20 @@ public class GraknStateStorage implements StateStorage {
         if(configuration != null)
             state.has(TASK_CONFIGURATION, configuration.toString());
 
-        graph.graql().insert(state).execute();
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME)) {
+            InsertQuery query = graph.graql().insert(state);
+            String sorry = query.stream()
+                    .filter(concept -> concept.type().getId().equals(SCHEDULED_TASK))
+                    .findFirst().get().getId();
 
-        try {
             graph.commit();
-        } catch (GraknValidationException e) {
-            LOG.error("Could not commit task to graph: "+e.getMessage());
+
+            return sorry;
+         } catch (GraknValidationException e) {
+            LOG.error("Could not commit task to graph: " + e.getMessage());
             return null;
         }
 
-        return graph.graql().match(state).execute()
-                    .get(0).values()
-                    .stream().findFirst()
-                    .map(Concept::getId)
-                    .orElse(null);
     }
 
     public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
@@ -130,51 +128,55 @@ public class GraknStateStorage implements StateStorage {
 
         System.out.println("going to delete");
 
-        // Remove relations to any resources we want to currently update
-        graph.graql().match(var(TASK_VAR).id(id))
-                .delete(deleters)
-                .execute();
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME)){
 
-        System.out.println("deleted, going to add new");
+            System.out.println(graph.getConcept(id));
 
-        // Insert new resources with new values.
-        graph.graql().insert(resources)
-                .execute();
+            // Remove relations to any resources we want to currently update
+            graph.graql().match(var(TASK_VAR).id(id))
+                    .delete(deleters)
+                    .execute();
 
-        System.out.println("done, committing");
+            System.out.println("deleted, going to add new");
 
-        try {
-            System.out.println("committing graph");
+            // Insert new resources with new values.
+            graph.graql().insert(resources)
+                    .execute();
+
+            System.out.println("done, committing");
             graph.commit();
-            System.out.println("done");
         } catch(GraknValidationException e) {
             e.printStackTrace();
+            System.out.println("what");
         }
+        System.out.println("done");
     }
 
     public TaskState getState(String id) {
         if(id == null)
             return null;
 
-        Instance instance = graph.getInstance(id);
-        Resource<?> name = instance.resources(graph.getResourceType(TASK_CLASS_NAME)).stream().findFirst().orElse(null);
-        if(name == null) {
-            LOG.error("Could not get 'task-class-name' for "+id);
-            return null;
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME)) {
+            Instance instance = graph.getInstance(id);
+            Resource<?> name = instance.resources(graph.getResourceType(TASK_CLASS_NAME)).stream().findFirst().orElse(null);
+            if (name == null) {
+                LOG.error("Could not get 'task-class-name' for " + id);
+                return null;
+            }
+
+            TaskState state = new TaskState(name.getValue().toString());
+
+            List<Map<String, Concept>> resources = graph.graql().match(var().rel(var().id(id)).rel(var("r").isa(var().isa("resource-type"))))
+                    .select("r")
+                    .execute();
+
+            resources.forEach(x -> x.values().forEach(y -> {
+                Resource<?> r = y.asResource();
+                buildState(state, r.type().getId(), r.getValue());
+            }));
+
+            return state;
         }
-
-        TaskState state = new TaskState(name.getValue().toString());
-
-        List<Map<String, Concept>> resources = graph.graql().match(var().rel(var().id(id)).rel(var("r").isa(var().isa("resource-type"))))
-                .select("r")
-                .execute();
-
-        resources.forEach(x -> x.values().forEach(y -> {
-            Resource<?> r = y.asResource();
-            buildState(state, r.type().getId(), r.getValue());
-        }));
-
-        return state;
     }
 
     public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset) {
@@ -187,27 +189,29 @@ public class GraknStateStorage implements StateStorage {
         if(createdBy != null)
             matchVar.has(CREATED_BY, createdBy);
 
-        MatchQuery q = graph.graql().match(matchVar);
+        try(GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME)) {
+            MatchQuery q = graph.graql().match(matchVar);
 
-        if(limit > 0)
-            q.limit(limit);
-        if(offset > 0)
-            q.offset(offset);
+            if (limit > 0)
+                q.limit(limit);
+            if (offset > 0)
+                q.offset(offset);
 
-        List<Map<String, Concept>> res = q.execute();
+            List<Map<String, Concept>> res = q.execute();
 
-        // Create Set of pairs with IDs &
-        Set<Pair<String, TaskState>> out = new HashSet<>();
-        for(Map<String, Concept> m: res) {
-            Concept c = m.values().stream().findFirst().orElse(null);
-            if(c != null) {
-                String id = c.getId();
+            // Create Set of pairs with IDs &
+            Set<Pair<String, TaskState>> out = new HashSet<>();
+            for (Map<String, Concept> m : res) {
+                Concept c = m.values().stream().findFirst().orElse(null);
+                if (c != null) {
+                    String id = c.getId();
 
-                out.add(new Pair<>(id, getState(id)));
+                    out.add(new Pair<>(id, getState(id)));
+                }
             }
-        }
 
-        return out;
+            return out;
+        }
     }
 
     /*

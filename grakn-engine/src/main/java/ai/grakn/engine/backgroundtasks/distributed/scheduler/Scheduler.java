@@ -18,7 +18,9 @@
 
 package ai.grakn.engine.backgroundtasks.distributed.scheduler;
 
+import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.distributed.GraknStateStorage;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -40,8 +42,8 @@ import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.work
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueProducer;
 
 //TODO read recurring tasks from the graph on init
-//TODO persist state to zookeeper and graph
-//TODO polling task runners to see who is alive and pickup their tasks
+//TODO persist state to zookeeper
+//TODO polling task runners to see who is alive and pickup their tasks-move this to another class?
 /**
  * Handle execution of recurring tasks.
  * Monitor new tasks queue to add them to ScheduledExecutorService.
@@ -50,11 +52,15 @@ import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.work
 public class Scheduler implements Runnable {
 
     private boolean running = true;
+    private StateStorage stateStorage;
     private KafkaConsumer<String, String> consumer;
     private KafkaProducer<String, String> producer;
     private ScheduledExecutorService schedulingService = Executors.newScheduledThreadPool(1);
 
     public Scheduler(){
+
+        // Init state storage
+        stateStorage = new GraknStateStorage();
 
         // Kafka listener
         consumer = new KafkaConsumer<>(workQueueConsumer());
@@ -95,14 +101,13 @@ public class Scheduler implements Runnable {
        this.running = running;
     }
 
-    //TODO update status in zookeeper and graph
     /**
      * Schedule a task to be submitted to the work queue when it is supposed to be run
      * @param taskId id of the task to be scheduled
      * @param task task to be scheduled
      */
     private void scheduleTask(String taskId, TaskState task){
-        task.status(SCHEDULED);
+        markAsScheduled(taskId);
 
         Runnable submit = () -> submitToWorkQueue(taskId, task);
         long delay = new Date().getTime() - task.runAt().getTime();
@@ -122,6 +127,15 @@ public class Scheduler implements Runnable {
     private void submitToWorkQueue(String taskId, TaskState task){
         System.out.println("Scheduled " + taskId);
         producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, taskId, task.serialize()));
+    }
+
+    //TODO update status in zookeeper
+    /**
+     * Mark the state of the given task as scheduled
+     * @param taskId task to mark the state of
+     */
+    private void markAsScheduled(String taskId){
+        stateStorage.updateState(taskId, SCHEDULED, this.getClass().getName(), null, null, null, null);
     }
 }
 

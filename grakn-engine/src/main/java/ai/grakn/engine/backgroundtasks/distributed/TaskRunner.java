@@ -44,6 +44,7 @@ public class TaskRunner implements Runnable {
                         System.out.println("record key: "+r.key());
 
                         if(markAsRunning(r.key())) {
+                            System.out.println("i am in if");
                             runTask(r.key(), TaskState.deserialize(r.value()));
                         }
                     }
@@ -54,10 +55,11 @@ public class TaskRunner implements Runnable {
 
             }
             catch (ClassNotFoundException | InstantiationException | IllegalAccessException ignored) {
-//                // Try next task
+                // Try next task
+                ignored.printStackTrace();
             }
-            catch (InterruptedException e) {
-                break;
+            catch (Exception e) {
+                throw new RuntimeException(e);
             }
 
         }
@@ -77,11 +79,12 @@ public class TaskRunner implements Runnable {
         LOG.debug("Marking task "+id+" as RUNNING, "+hostname);
         System.out.println("Marking task "+id+" as RUNNING, "+hostname);
         stateStorage.updateState(id, RUNNING, this.getClass().getName(), hostname, null, null, null);
-
+        System.out.println("i am after update");
         return true;
     }
 
     private void runTask(String id, TaskState state) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
+        System.out.println(state);
         System.out.println("running task: "+state.taskClassName());
         LOG.debug("running task "+state.taskClassName());
 

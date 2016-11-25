@@ -18,7 +18,10 @@
 
 package ai.grakn.test.engine.scheduler;
 
+import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
+import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.distributed.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.distributed.scheduler.Scheduler;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.engine.TestTask;
@@ -29,8 +32,10 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,6 +46,7 @@ import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.POLL
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueConsumer;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueProducer;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static junit.framework.Assert.assertEquals;
 
 /**
@@ -49,6 +55,7 @@ import static junit.framework.Assert.assertEquals;
 public class SchedulerTest extends AbstractEngineTest {
 
     private ExecutorService executor = Executors.newSingleThreadExecutor();
+    private StateStorage stateStorage = new GraknStateStorage();
     private Scheduler scheduler;
     private Future future;
 
@@ -60,13 +67,14 @@ public class SchedulerTest extends AbstractEngineTest {
 
     @Test
     public void testInstantaneousOneTimeTasks() throws Exception {
-        addNewTasksToQueue(10);
+        Collection<String> tasks = addNewTasksToQueue(10);
 
         Thread.sleep(6000);
 
         System.out.println("setting false");
         scheduler.setRunning(false);
 
+        checkScheduledInGraph(tasks);
         assertEquals(10, countMessagesInWorkQueue());
     }
 
@@ -81,21 +89,27 @@ public class SchedulerTest extends AbstractEngineTest {
     }
 
 
-    private void addNewTasksToQueue(int n) throws Exception {
+    private Collection<String> addNewTasksToQueue(int n) throws Exception {
         KafkaProducer<String, String> producer = new KafkaProducer<>(workQueueProducer());
+        Collection<String> tasks = new HashSet<>();
 
         for(int i=0; i < n; i++) {
 
-            TaskState state = new TaskState(TestTask.class.getName());
-            state.runAt(new Date(System.currentTimeMillis()));
+            String taskId = stateStorage.newState(TestTask.class.getName(),
+                    SchedulerTest.class.getName(),
+                    new Date(System.currentTimeMillis()),
+                    false, 0, null);
 
-            System.out.println("Sending: " + state.serialize());
+            TaskState state = stateStorage.getState(taskId);
 
-            producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, UUID.randomUUID().toString(), state.serialize()));
+            producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, taskId, state.serialize()));
             producer.flush();
+
+            System.out.println("Sent: " + state.serialize());
         }
 
         producer.close();
+        return tasks;
     }
 
     private int countMessagesInWorkQueue(){
@@ -105,5 +119,13 @@ public class SchedulerTest extends AbstractEngineTest {
         ConsumerRecords<String, String> records = consumer.poll(POLL_FREQUENCY);
         consumer.close();
         return records.count();
+    }
+
+    private void checkScheduledInGraph(Collection<String> tasks){
+        for(String id:tasks){
+            TaskState state = stateStorage.getState(id);
+            TaskStatus status = state.status();
+            assertEquals(status, SCHEDULED);
+        }
     }
 }

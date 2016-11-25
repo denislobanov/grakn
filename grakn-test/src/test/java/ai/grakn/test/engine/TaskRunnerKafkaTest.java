@@ -42,7 +42,7 @@ public class TaskRunnerKafkaTest extends AbstractEngineTest {
 
     @Test
     public void testSendReceive() throws InterruptedException {
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 5; i++) {
             // Create test task
             JSONObject config = new JSONObject().put("name", "task "+Integer.toString(i));
             String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, config);
@@ -52,17 +52,13 @@ public class TaskRunnerKafkaTest extends AbstractEngineTest {
                     new TaskState(TestTask.class.getName())
                             .status(TaskStatus.SCHEDULED)
                             .configuration(config)
-                            .toString()
+                            .serialize()
             ));
             producer.flush();
             System.out.println("sent");
         }
 
         producer.close();
-
-
-//        Thread.sleep(10000);
-
 
         while(!future.isDone()) {
             Thread.sleep(1000);
