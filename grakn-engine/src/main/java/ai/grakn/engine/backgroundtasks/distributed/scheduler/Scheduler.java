@@ -19,7 +19,6 @@
 package ai.grakn.engine.backgroundtasks.distributed.scheduler;
 
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.TaskStatus;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -28,7 +27,6 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.util.Collections;
 import java.util.Date;
-import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 

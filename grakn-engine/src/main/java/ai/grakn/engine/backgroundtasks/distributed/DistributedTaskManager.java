@@ -24,12 +24,14 @@ import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.scheduler.SchedulerClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Date;
 
 import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.ZOOKEEPER_URL;
+import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.workQueueProducer;
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 
 /**
@@ -37,7 +39,12 @@ import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
  */
 public class DistributedTaskManager implements TaskManager, AutoCloseable {
 
-    public static CuratorFramework zookeeperClient;
+    private static CuratorFramework zookeeperClient;
+    private static SchedulerClient schedulerClient;
+
+    private KafkaProducer producer;
+
+    private StateStorage storage;
 
     /**
      * Instantiate connection with Zookeeper.
@@ -47,9 +54,15 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
             zookeeperClient = newClient(ZOOKEEPER_URL, new ExponentialBackoffRetry(1000, 0));
             zookeeperClient.start();
 
-            // start sheduler client to add self to leader election pool
-            SchedulerClient schedulerClient = new SchedulerClient(zookeeperClient);
+            // start scheduler client to add self to leader election pool
+            schedulerClient = new SchedulerClient(zookeeperClient);
             schedulerClient.start();
+
+            // Kafka producer to add things to new tasks
+            producer = new KafkaProducer<>(workQueueProducer());
+
+            // Persisted storage in grakn graph
+            storage = new GraknStateStorage();
         } catch (IOException e){
             throw new RuntimeException("Count not start scheduler client");
         }
@@ -72,6 +85,6 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
 
     @Override
     public StateStorage storage() {
-        return null;
+        return storage;
     }
 }
