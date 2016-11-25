@@ -13,6 +13,8 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.*;
 
@@ -92,7 +94,15 @@ public class TaskRunner implements Runnable {
         Class<?> c = Class.forName(state.taskClassName());
         BackgroundTask task = (BackgroundTask) c.newInstance();
 
-        task.start(saveCheckpoint(id), state.configuration());
+        try {
+            task.start(saveCheckpoint(id), state.configuration());
+        }
+        catch(Throwable t) {
+            stateStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
+            return;
+        }
+
+        stateStorage.updateState(id, COMPLETED, this.getClass().getName(), null, null, null, null);
     }
 
     private Consumer<String> saveCheckpoint(String id) {
