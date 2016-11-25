@@ -51,6 +51,7 @@ import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.work
  */
 public class Scheduler implements Runnable {
 
+    private boolean running = true;
     private KafkaConsumer<String, String> consumer;
     private KafkaProducer<String, String> producer;
     private ScheduledExecutorService schedulingService = Executors.newScheduledThreadPool(1);
@@ -69,7 +70,7 @@ public class Scheduler implements Runnable {
      *
      */
     public void run() {
-        while(true) {
+        while(running) {
             try {
                 ConsumerRecords<String, String> records = consumer.poll(POLL_FREQUENCY);
 
@@ -81,16 +82,19 @@ public class Scheduler implements Runnable {
                 }
 
                 Thread.sleep(500);
-
             } catch (InterruptedException e){
                 e.printStackTrace();
                 break;
             } catch (Exception e) {
                 e.printStackTrace();
-            } finally {
-                consumer.close();
             }
         }
+
+        consumer.close();
+    }
+
+    public void setRunning(boolean running){
+       this.running = running;
     }
 
     //TODO update status in zookeeper and graph
@@ -110,8 +114,6 @@ public class Scheduler implements Runnable {
         } else {
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
-
-        System.out.println("Scheduled " + taskId);
     }
 
     /**
@@ -120,6 +122,7 @@ public class Scheduler implements Runnable {
      * @param task task to be submitted
      */
     private void submitToWorkQueue(String taskId, TaskState task){
+        System.out.println("Scheduled " + taskId);
         producer.send(new ProducerRecord<>(WORK_QUEUE_TOPIC, taskId, task.serialize()));
     }
 }
