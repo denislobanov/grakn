@@ -127,8 +127,6 @@ public class GraknStateStorage implements StateStorage {
 
         try(GraknGraph graph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME)){
 
-            System.out.println(graph.getConcept(id));
-
             // Remove relations to any resources we want to currently update
             graph.graql().match(var(TASK_VAR).id(id))
                     .delete(deleters)

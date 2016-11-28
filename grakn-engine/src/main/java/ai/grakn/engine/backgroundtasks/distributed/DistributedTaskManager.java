@@ -71,13 +71,18 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
             // Start TaskRunner
             Executors.newSingleThreadExecutor().execute(new TaskRunner());
         } catch (IOException e){
-            throw new RuntimeException("Count not start scheduler client");
+            throw new RuntimeException("Could not start scheduler client");
         }
     }
 
     @Override
     public void close(){
-        zookeeperClient.close();
+        try {
+            zookeeperClient.close();
+            schedulerClient.close();
+        } catch (IOException e){
+            throw new RuntimeException("Could not stop scheduler client");
+        }
     }
 
     @Override

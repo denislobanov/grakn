@@ -79,7 +79,7 @@ public class TaskRunner implements Runnable {
     }
 
     private void runTask(String id, TaskState state) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-        System.out.println("running task: "+id);
+        LOG.debug("Running task "+state.taskClassName());
 
         // Instantiate task
         Class<?> c = Class.forName(state.taskClassName());
