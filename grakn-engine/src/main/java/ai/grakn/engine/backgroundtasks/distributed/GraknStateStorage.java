@@ -79,14 +79,14 @@ public class GraknStateStorage implements StateStorage {
 
     }
 
-    public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
-                            Throwable failure, String checkpoint, JSONObject configuration) {
+    public Boolean updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
+                               Throwable failure, String checkpoint, JSONObject configuration) {
         if(id == null)
-            return;
+            return false;
 
         if(status == null && statusChangeBy == null && executingHostname == null && failure == null
                 && checkpoint == null && configuration == null)
-            return;
+            return false;
 
         // Existing resource relations to remove
         Var deleters = var(TASK_VAR);
@@ -139,7 +139,10 @@ public class GraknStateStorage implements StateStorage {
             graph.commit();
         } catch(GraknValidationException e) {
             e.printStackTrace();
+            return false;
         }
+
+        return true;
     }
 
     public TaskState getState(String id) {

@@ -63,14 +63,14 @@ public class InMemoryStateStorage implements StateStorage {
         return id;
     }
 
-    public void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
-                            Throwable failure, String checkpoint, JSONObject configuration) {
+    public Boolean updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
+                               Throwable failure, String checkpoint, JSONObject configuration) {
         if(id == null)
-            return;
+            return false;
 
         if(status == null && statusChangeBy == null && executingHostname == null && failure == null
                 && checkpoint == null && configuration == null)
-            return;
+            return false;
 
         TaskState state = storage.get(id);
         synchronized (state) {
@@ -88,6 +88,8 @@ public class InMemoryStateStorage implements StateStorage {
             if(configuration != null)
                 state.configuration(configuration);
         }
+
+        return true;
     }
 
     public TaskState getState(String id) {

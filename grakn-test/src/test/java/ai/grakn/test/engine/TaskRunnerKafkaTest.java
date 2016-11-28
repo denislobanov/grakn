@@ -29,7 +29,7 @@ public class TaskRunnerKafkaTest extends AbstractEngineTest {
     private Future<?> future;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         Assume.assumeFalse(usingTinker());
 
         producer = new KafkaProducer<>(KafkaConfig.workQueueProducer());

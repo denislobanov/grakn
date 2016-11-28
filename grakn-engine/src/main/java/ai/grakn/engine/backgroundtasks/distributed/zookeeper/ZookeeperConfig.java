@@ -20,8 +20,9 @@ package ai.grakn.engine.backgroundtasks.distributed.zookeeper;
 
 public class ZookeeperConfig {
 
-    public static final String ZOOKEEPER_URL = "127.0.0.1";
+    public static final String ZOOKEEPER_URL = "127.0.0.1:2181";
     public static final String SCHEDULER_PATH = "/scheduler";
+    public static final int TIMEOUT = 1000;
 
     public static final String TASK_PATH = "/task/%s";
     public static final String STATE_PATH = "/task/%s/state";

@@ -45,10 +45,10 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
 
     private static CuratorFramework zookeeperClient;
     private static SchedulerClient schedulerClient;
-
     private KafkaProducer producer;
 
     private StateStorage storage;
+    private TaskRunner taskRunner;
 
     /**
      * Instantiate connection with Zookeeper.
@@ -69,9 +69,10 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
             storage = new GraknStateStorage();
 
             // Start TaskRunner
-            Executors.newSingleThreadExecutor().execute(new TaskRunner());
-        } catch (IOException e){
-            throw new RuntimeException("Could not start scheduler client");
+            taskRunner = new TaskRunner();
+            Executors.newSingleThreadExecutor().execute(taskRunner);
+        } catch (Exception e){
+            throw new RuntimeException("Could not start scheduler client: "+e);
         }
     }
 

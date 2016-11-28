@@ -58,13 +58,13 @@ public interface StateStorage {
      * @param failure Throwable to store any exceptions that occurred during executing. May be null.
      * @param checkpoint String to store task checkpoint, may be null.
      */
-    void updateState(String id,
-                     TaskStatus status,
-                     String statusChangeBy,
-                     String executingHostname,
-                     Throwable failure,
-                     String checkpoint,
-                     JSONObject configuration);
+    Boolean updateState(String id,
+                        TaskStatus status,
+                        String statusChangeBy,
+                        String executingHostname,
+                        Throwable failure,
+                        String checkpoint,
+                        JSONObject configuration);
 
     /**
      * This is a copy of the internal TaskState object. It is guaranteed to be correct at the time of call, however the actual
