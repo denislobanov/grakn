@@ -1,9 +1,10 @@
 package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.*;
+import ai.grakn.engine.backgroundtasks.distributed.scheduler.TaskFailover;
 import ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.engine.util.SystemOntologyElements;
+import ai.grakn.engine.util.UniqueHostname;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
@@ -11,6 +12,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,16 +20,21 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static ai.grakn.engine.backgroundtasks.distributed.ZooKeeperStateStorage.PATH_PREFIX;
 import static ai.grakn.engine.backgroundtasks.distributed.kafka.KafkaConfig.*;
+import static ai.grakn.engine.backgroundtasks.distributed.scheduler.TaskFailover.TASK_RUNNER_STATE_PATH;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class TaskRunner implements Runnable {
     private final static String LOCK_SUFFIX = "/lock";
     private final Logger LOG = LoggerFactory.getLogger(TaskRunner.class);
+    private final Set<String> runningTasks = new HashSet<>();
+    private final String name = UniqueHostname.getInstance().name();
 
     private boolean running;
     private StateStorage graknStorage;
@@ -120,10 +127,13 @@ public class TaskRunner implements Runnable {
                (state.status() == RUNNING && state.executingHostname() == null) ||
                (state.status() == RUNNING && state.executingHostname().isEmpty()))
             {
+                synchronized (runningTasks) {
+                    runningTasks.add(id);
+                }
+
+                updateOwnState();
+                updateTaskState(id, RUNNING, this.getClass().getName(), name, null, null);
                 shouldRun = true;
-                zkStorage.updateState(id, RUNNING, this.getClass().getName(), getHostname(), null, null, null);
-                graknStorage.updateState(id, RUNNING, this.getClass().getName(), getHostname(), null, null, null);
-                System.out.println("all good");
             }
             else {
                 System.out.println(" cant mark as running because\n\t\tstatus:" + state.status() + "\n\t\t executing hostname: " + state.executingHostname());
@@ -156,29 +166,17 @@ public class TaskRunner implements Runnable {
 
         try {
             task.start(saveCheckpoint(id), state.configuration());
+            updateTaskState(id, COMPLETED, this.getClass().getName(), null, null, null);
         }
         catch(Throwable t) {
-            updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
-            return;
+            updateTaskState(id, FAILED, this.getClass().getName(), null, t, null);
         }
-
-        updateState(id, COMPLETED, this.getClass().getName(), null, null, null, null);
-    }
-
-    /**
-     * Get hostname of running OS, falling back to config file hostname otherwise.
-     * @return String hostname
-     */
-    private String getHostname() {
-        String hostname = ConfigProperties.getInstance().getProperty(ConfigProperties.SERVER_HOST_NAME);
-        try {
-            hostname = InetAddress.getLocalHost().getHostName();
+        finally {
+            synchronized (runningTasks) {
+                runningTasks.remove(id);
+            }
+            updateOwnState();
         }
-        catch (UnknownHostException e) {
-            Arrays.asList(e.getStackTrace()).forEach(x -> LOG.error(x.toString()));
-        }
-
-        return hostname;
     }
 
     /**
@@ -202,19 +200,18 @@ public class TaskRunner implements Runnable {
     private Consumer<String> saveCheckpoint(String id) {
         return checkpoint -> {
             System.out.println("Writing checkpoint");
-            updateState(id, null, null, null, null, checkpoint, null);
-
+            updateTaskState(id, null, null, null, null, checkpoint);
         };
     }
 
-    private void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
-                             Throwable failure, String checkpoint, JSONObject configuration) {
+    private void updateTaskState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
+                                 Throwable failure, String checkpoint) {
         try {
             // Update ZK
             InterProcessMutex mutex = new InterProcessMutex(client, PATH_PREFIX+id+LOCK_SUFFIX);
             mutex.acquire();
 
-            zkStorage.updateState(id, status, statusChangeBy, executingHostname, failure, checkpoint, configuration);
+            zkStorage.updateState(id, status, statusChangeBy, executingHostname, failure, checkpoint, null);
 
             mutex.release();
         }
@@ -224,7 +221,23 @@ public class TaskRunner implements Runnable {
         }
         finally {
             // Update Graph
-            graknStorage.updateState(id, status, statusChangeBy, executingHostname, failure, checkpoint, configuration);
+            graknStorage.updateState(id, status, statusChangeBy, executingHostname, failure, checkpoint, null);
         }
     }
+
+    private void updateOwnState() {
+        synchronized (runningTasks) {
+            JSONArray out = new JSONArray();
+            out.put(runningTasks);
+
+            try {
+                client.create()
+                        .creatingParentContainersIfNeeded()
+                        .forPath(TASK_RUNNER_STATE_PATH + "/" + UniqueHostname.getInstance().name(), out.toString().getBytes());
+            } catch (Exception e) {
+                System.out.println("Could not update TaskRunner state in ZooKeeper! " + e);
+            }
+        }
+    }
+
 }

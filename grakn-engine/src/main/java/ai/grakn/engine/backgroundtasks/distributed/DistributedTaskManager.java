@@ -22,7 +22,7 @@ import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
-import ai.grakn.engine.backgroundtasks.distributed.scheduler.SchedulerClient;
+import ai.grakn.engine.backgroundtasks.distributed.scheduler.ClusterManager;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -44,7 +44,7 @@ import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 public class DistributedTaskManager implements TaskManager, AutoCloseable {
 
     private static CuratorFramework zookeeperClient;
-    private static SchedulerClient schedulerClient;
+    private static ClusterManager clusterManager;
     private KafkaProducer producer;
 
     private StateStorage storage;
@@ -59,8 +59,8 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
             zookeeperClient.start();
 
             // start scheduler client to add self to leader election pool
-            schedulerClient = new SchedulerClient(zookeeperClient);
-            schedulerClient.start();
+            clusterManager = new ClusterManager(zookeeperClient);
+            clusterManager.start();
 
             // Kafka producer to add things to new tasks
             producer = new KafkaProducer<>(workQueueProducer());
@@ -80,7 +80,7 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
     public void close(){
         try {
             zookeeperClient.close();
-            schedulerClient.close();
+            clusterManager.close();
         } catch (IOException e){
             throw new RuntimeException("Could not stop scheduler client");
         }

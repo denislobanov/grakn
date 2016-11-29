@@ -18,46 +18,47 @@
 
 package ai.grakn.engine.backgroundtasks.distributed.scheduler;
 
+import ai.grakn.engine.util.UniqueHostname;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
 import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static ai.grakn.engine.backgroundtasks.distributed.scheduler.TaskFailover.WATCH_PATH;
 import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.SCHEDULER_PATH;
+import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperConfig.ZOOKEEPER_URL;
 
 /**
  * Scheduler will be constantly running on the "Leader" machine. The "takeLeadership"
  * function in this class will be called if it is needed to take over.
  */
-public class SchedulerClient extends LeaderSelectorListenerAdapter implements Closeable {
+public class ClusterManager extends LeaderSelectorListenerAdapter implements Closeable {
 
-    private final static Logger LOG = LoggerFactory.getLogger(SchedulerClient.class);
+    private final static Logger LOG = LoggerFactory.getLogger(ClusterManager.class);
 
     private final String name;
     private final LeaderSelector leaderSelector;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private Scheduler scheduler;
+    private TreeCache cache;
 
-    public SchedulerClient(CuratorFramework client) {
-        try {
-            this.name = InetAddress.getLocalHost().getHostName();
+    public ClusterManager(CuratorFramework client) {
+        this.name = UniqueHostname.getInstance().name();
 
-            leaderSelector = new LeaderSelector(client, SCHEDULER_PATH, this);
-            leaderSelector.autoRequeue();
-        } catch (UnknownHostException e){
-            throw new RuntimeException("Could not get current host.");
-        }
+        leaderSelector = new LeaderSelector(client, SCHEDULER_PATH, this);
+        leaderSelector.autoRequeue();
     }
 
     public void start() throws IOException {
@@ -67,6 +68,9 @@ public class SchedulerClient extends LeaderSelectorListenerAdapter implements Cl
     }
 
     public void close() throws IOException {
+        if(cache != null)
+            cache.close();
+
         leaderSelector.close();
     }
 
@@ -78,6 +82,7 @@ public class SchedulerClient extends LeaderSelectorListenerAdapter implements Cl
         LOG.info(name + " has taken over the scheduler");
 
         scheduler = new Scheduler();
+        registerFailover();
         waitOnScheduler(executor.submit(scheduler::run));
     }
 
@@ -99,5 +104,12 @@ public class SchedulerClient extends LeaderSelectorListenerAdapter implements Cl
         } catch (InterruptedException | ExecutionException e) {
             LOG.error(ExceptionUtils.getFullStackTrace(e));
         }
+    }
+
+    private void registerFailover() throws Exception {
+        CuratorFramework client = CuratorFrameworkFactory.newClient(ZOOKEEPER_URL, new ExponentialBackoffRetry(1000, 3));
+        cache = new TreeCache(client, WATCH_PATH);
+
+        cache.getListenable().addListener(new TaskFailover(cache));
     }
 }

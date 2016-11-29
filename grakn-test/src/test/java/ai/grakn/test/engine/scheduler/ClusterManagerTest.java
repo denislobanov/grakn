@@ -19,7 +19,7 @@
 package ai.grakn.test.engine.scheduler;
 
 import ai.grakn.engine.backgroundtasks.distributed.scheduler.Scheduler;
-import ai.grakn.engine.backgroundtasks.distributed.scheduler.SchedulerClient;
+import ai.grakn.engine.backgroundtasks.distributed.scheduler.ClusterManager;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.junit.BeforeClass;
@@ -29,7 +29,7 @@ import static ai.grakn.engine.backgroundtasks.distributed.zookeeper.ZookeeperCon
 import static org.apache.curator.framework.CuratorFrameworkFactory.newClient;
 import static org.junit.Assert.assertNotEquals;
 
-public class SchedulerClientTest {
+public class ClusterManagerTest {
 
     public static CuratorFramework zookeeperClient = newClient(ZOOKEEPER_URL, new ExponentialBackoffRetry(1000, 0));
 
@@ -40,18 +40,18 @@ public class SchedulerClientTest {
 
     @Test
     public void testSchedulerRestartsAfterKilled() throws Exception {
-        SchedulerClient schedulerClient = new SchedulerClient(zookeeperClient);
-        schedulerClient.start();
+        ClusterManager clusterManager = new ClusterManager(zookeeperClient);
+        clusterManager.start();
 
         Thread.sleep(3000);
 
-        Scheduler scheduler1 = schedulerClient.getScheduler();
+        Scheduler scheduler1 = clusterManager.getScheduler();
 
         // Kill scheduler- client should create a new one
         scheduler1.setRunning(false);
         Thread.sleep(3000);
 
-        Scheduler scheduler2 = schedulerClient.getScheduler();
+        Scheduler scheduler2 = clusterManager.getScheduler();
         assertNotEquals(scheduler1, scheduler2);
     }
 }
