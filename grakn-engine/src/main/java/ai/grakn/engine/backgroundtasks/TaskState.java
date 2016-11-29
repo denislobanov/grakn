@@ -234,18 +234,20 @@ public class TaskState implements Cloneable, Serializable {
      */
     public String serialize(){
         JSONObject json = new JSONObject();
-        json.put(STATUS, status);
-        json.put(STATUS_CHANGE_TIME, statusChangeTime);
-        json.put(CREATED_BY, creator);
-        json.put(TASK_CLASS_NAME, taskClassName);
-        json.put(EXECUTING_HOSTNAME, executingHostname);
-        json.put(RUN_AT, runAt != null ? runAt.getTime() : null);
-        json.put(RECURRING, recurring);
-        json.put(RECUR_INTERVAL, interval);
-        json.put(STACK_TRACE, stackTrace);
-        json.put(TASK_EXCEPTION, exception);
-        json.put(TASK_CHECKPOINT, taskCheckpoint);
-        json.put(TASK_CONFIGURATION, configuration);
+        json.put(STATUS, status)
+            .put(STATUS_CHANGE_TIME, statusChangeTime)
+            .put(STATUS_CHANGE_BY, statusChangedBy)
+            .put(CREATED_BY, creator)
+            .put(TASK_CLASS_NAME, taskClassName)
+            .put(EXECUTING_HOSTNAME, executingHostname)
+            .put(RUN_AT, runAt != null ? runAt.getTime() : null)
+            .put(RECURRING, recurring)
+            .put(RECUR_INTERVAL, interval)
+            .put(STACK_TRACE, stackTrace)
+            .put(TASK_EXCEPTION, exception)
+            .put(TASK_CHECKPOINT, taskCheckpoint)
+            .put(TASK_CONFIGURATION, configuration);
+
         return json.toString();
     }
 
@@ -254,6 +256,7 @@ public class TaskState implements Cloneable, Serializable {
         TaskState state = new TaskState(json.getString(TASK_CLASS_NAME));
 
         state.status(TaskStatus.valueOf(json.getString(STATUS)));
+        if(json.has(STATUS_CHANGE_BY)) state.statusChangedBy(json.getString(STATUS_CHANGE_BY));
         if(json.has(CREATED_BY)) state.creator(json.getString(CREATED_BY));
         if(json.has(EXECUTING_HOSTNAME)) state.executingHostname(json.getString(EXECUTING_HOSTNAME));
         if(json.has(RUN_AT)) state.runAt(new Date(json.getLong(RUN_AT)));

@@ -28,9 +28,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.json.JSONObject;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Set;
+import java.util.*;
 
 public class ZooKeeperStateStorage implements StateStorage {
     public static final String PATH_PREFIX = "/tasks/";
@@ -42,7 +40,6 @@ public class ZooKeeperStateStorage implements StateStorage {
         client = CuratorFrameworkFactory.newClient(ZookeeperConfig.ZOOKEEPER_URL, new ExponentialBackoffRetry(1000, 3));
         client.start();
         client.blockUntilConnected();
-        System.out.println(" instantiated new " + this.getClass().getName());
     }
 
     public String newState(String taskName, String createdBy, Date runAt, Boolean recurring, long interval, JSONObject configuration) {
@@ -53,13 +50,10 @@ public class ZooKeeperStateStorage implements StateStorage {
         if(id == null || state == null)
             return;
 
-        System.out.println("save existing");
-
         try {
             client.create()
                   .creatingParentContainersIfNeeded()
                   .forPath(PATH_PREFIX+id+TASKSTATE_SUFFIX, state.serialize().getBytes());
-            System.out.println("did save existing");
         }
         catch (Exception e) {
             System.out.println(this.getClass().getName() + " Could not write to ZooKeeper! " + e);
@@ -98,7 +92,6 @@ public class ZooKeeperStateStorage implements StateStorage {
 
             // Save to ZK
             client.setData().forPath(PATH_PREFIX + id + TASKSTATE_SUFFIX, state.serialize().getBytes());
-            System.out.println("updated in zk");
         }
         catch (Exception e) {
             System.out.println(this.getClass().getName()+" Could not write to ZooKeeper! - "+e);
@@ -121,12 +114,45 @@ public class ZooKeeperStateStorage implements StateStorage {
             System.out.println(this.getClass().getName()+" Could not read from ZooKeeper! "+e);
         }
 
-        System.out.println("got from zk");
-
         return state;
     }
 
     public Set<Pair<String, TaskState>> getTasks(TaskStatus taskStatus, String taskClassName, String createdBy, int limit, int offset) {
-        throw new UnsupportedOperationException("not yet implemented");
+        Set<Pair<String, TaskState>> res = new HashSet<>();
+
+        try {
+            List<String> tasks = client.getChildren().forPath("/tasks");
+
+            int count = 0;
+            for(String id: tasks) {
+                byte[] b = client.getData().forPath(PATH_PREFIX+id+TASKSTATE_SUFFIX);
+                TaskState state = TaskState.deserialize(new String(b));
+
+                // AND
+                if(taskStatus != null && state.status() != taskStatus)
+                    continue;
+                if(taskClassName != null && !Objects.equals(state.taskClassName(), taskClassName))
+                    continue;
+                if(createdBy != null && !Objects.equals(state.creator(), createdBy))
+                    continue;
+
+                if(count < offset) {
+                    count++;
+                    continue;
+                }
+                else if(limit > 0 && count >= (limit+offset)) {
+                    break;
+                }
+                count++;
+
+                res.add(new Pair<>(id, state));
+            }
+
+        }
+        catch (Exception e) {
+            System.out.println(e);
+        }
+
+        return res;
     }
 }

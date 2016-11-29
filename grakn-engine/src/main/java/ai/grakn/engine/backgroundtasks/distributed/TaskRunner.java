@@ -11,6 +11,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,10 +105,8 @@ public class TaskRunner implements Runnable {
             InterProcessMutex mutex = newMutex(id);
 
             // Move on to next task if cant lock
-            if(!mutex.acquire(1000, MILLISECONDS)) {
-                System.out.println("could not aquire lock");
+            if(!mutex.acquire(1000, MILLISECONDS))
                 return false;
-            }
 
             // Read state
             TaskState state = zkStorage.getState(id);
@@ -117,7 +116,7 @@ public class TaskRunner implements Runnable {
             }
 
             // Old or duplicate messages
-            if((state.status() == SCHEDULED ) ||
+            if((state.status() == SCHEDULED) ||
                (state.status() == RUNNING && state.executingHostname() == null) ||
                (state.status() == RUNNING && state.executingHostname().isEmpty()))
             {
@@ -159,13 +158,11 @@ public class TaskRunner implements Runnable {
             task.start(saveCheckpoint(id), state.configuration());
         }
         catch(Throwable t) {
-            zkStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
-            graknStorage.updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
+            updateState(id, FAILED, this.getClass().getName(), null, t, null, null);
             return;
         }
 
-        zkStorage.updateState(id, COMPLETED, this.getClass().getName(), null, null, null, null);
-        graknStorage.updateState(id, COMPLETED, this.getClass().getName(), null, null, null, null);
+        updateState(id, COMPLETED, this.getClass().getName(), null, null, null, null);
     }
 
     /**
@@ -204,23 +201,30 @@ public class TaskRunner implements Runnable {
      */
     private Consumer<String> saveCheckpoint(String id) {
         return checkpoint -> {
-            try {
-                // Update ZK
-                InterProcessMutex mutex = new InterProcessMutex(client, "/tasks/"+id+"/lock");
-                mutex.acquire();
+            System.out.println("Writing checkpoint");
+            updateState(id, null, null, null, null, checkpoint, null);
 
-                zkStorage.updateState(id, null, null, null, null, checkpoint, null);
-
-                mutex.release();
-            }
-            catch (Exception e) {
-                System.out.println("Could not write checkpoint to ZooKeeper! "+e);
-                Arrays.asList(e.getStackTrace()).forEach(x -> LOG.error(x.toString()));
-            }
-            finally {
-                // Update Graph
-                graknStorage.updateState(id, null, null, null, null, checkpoint, null);
-            }
         };
+    }
+
+    private void updateState(String id, TaskStatus status, String statusChangeBy, String executingHostname,
+                             Throwable failure, String checkpoint, JSONObject configuration) {
+        try {
+            // Update ZK
+            InterProcessMutex mutex = new InterProcessMutex(client, PATH_PREFIX+id+LOCK_SUFFIX);
+            mutex.acquire();
+
+            zkStorage.updateState(id, status, statusChangeBy, executingHostname, failure, checkpoint, configuration);
+
+            mutex.release();
+        }
+        catch (Exception e) {
+            System.out.println("Could not write to ZooKeeper! "+e);
+            Arrays.asList(e.getStackTrace()).forEach(x -> LOG.error(x.toString()));
+        }
+        finally {
+            // Update Graph
+            graknStorage.updateState(id, status, statusChangeBy, executingHostname, failure, checkpoint, configuration);
+        }
     }
 }
