@@ -17,8 +17,8 @@
  */
 package ai.grakn.engine;
 
-
 import ai.grakn.GraknGraph;
+import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.controller.TasksController;
 import ai.grakn.engine.controller.CommitLogController;
 import ai.grakn.engine.controller.GraphFactoryController;
@@ -94,6 +94,9 @@ public class GraknEngineServer {
 
         loadSystemOntology();
 
+        // Start background task cluster.
+        ClusterManager.getInstance().start();
+
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
 
@@ -102,6 +105,7 @@ public class GraknEngineServer {
 
     public static void stop(){
         Spark.stop();
+        ClusterManager.getInstance().stop();
     }
 
     /**

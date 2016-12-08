@@ -24,7 +24,8 @@ import ai.grakn.Grakn;
 import ai.grakn.concept.Entity;
 import ai.grakn.concept.Relation;
 import ai.grakn.concept.RelationType;
-import ai.grakn.engine.loader.client.LoaderClient;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
+import ai.grakn.engine.loader.Loader;
 import ai.grakn.graph.internal.AbstractGraknGraph;
 import ai.grakn.graql.internal.analytics.Analytics;
 import ai.grakn.concept.EntityType;
@@ -42,7 +43,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -424,9 +424,9 @@ public class ScalingTestIT extends AbstractScalingTest {
         simpleOntology(keyspace);
         new Analytics(keyspace, new HashSet<>(), new HashSet<>());
 
-        LoaderClient loaderClient = new LoaderClient(keyspace, Arrays.asList(HOST_NAME));
+        Loader loaderClient = new Loader(keyspace);
 //        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
+//        loaderClient.setPollingFrequency(1000);
         loaderClient.setBatchSize(100);
 
         for (int g=1; g<totalSteps+1; g++) {
@@ -536,10 +536,9 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     private void addNodes(String keyspace, int startRange, int endRange) throws GraknValidationException, InterruptedException {
         // batch in the nodes
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
+        Loader loaderClient = new Loader(keyspace);
 //        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
+//        loaderClient.setPollingFrequency(1000);
         loaderClient.setBatchSize(100);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
@@ -553,10 +552,9 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     private void addEdgesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
         // batch in the nodes
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
+        Loader loaderClient = new Loader(keyspace);
 //        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
+//        loaderClient.setPollingFrequency(1000);
         loaderClient.setBatchSize(100);
 
         for (String supernodeId : superNodes) {
@@ -603,10 +601,9 @@ public class ScalingTestIT extends AbstractScalingTest {
         }
 
         // batch in the nodes
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
+        Loader loaderClient = new Loader(keyspace);
 //        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
+//        loaderClient.setPollingFrequency(1000);
         loaderClient.setBatchSize(100);
 
         int startNode = 0;

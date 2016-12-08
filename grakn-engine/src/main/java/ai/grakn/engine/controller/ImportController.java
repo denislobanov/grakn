@@ -18,9 +18,8 @@
 
 package ai.grakn.engine.controller;
 
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.engine.loader.LoaderImpl;
-import ai.grakn.engine.loader.client.LoaderClient;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknEngineServerException;
 import ai.grakn.graql.Graql;
@@ -90,20 +89,18 @@ public class ImportController {
                     "be used to load ontologies because it splits up the file into smaller parts.")
     @ApiImplicitParams({
             @ApiImplicitParam(name = "path", value = "File path on the server.", required = true, dataType = "string", paramType = "body"),
-            @ApiImplicitParam(name = "hosts", value = "Collection of hosts' addresses.", required = true, dataType = "string", paramType = "body"),
             @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query")
     })
     private String importDataREST(Request req, Response res) {
         try {
             final String keyspace = getKeyspace(req);
             final String pathToFile = getAsString(PATH_FIELD, req.body());
-            final Collection<String> hosts = getAsList(HOSTS_FIELD, req.body());
 
             final File file = new File(pathToFile);
             if (!file.exists())
                 throw new FileNotFoundException(ErrorMessage.NO_GRAQL_FILE.getMessage(pathToFile));
 
-            Loader loader = getLoader(keyspace, hosts);
+            Loader loader = new Loader(keyspace);
 
             // Spawn threads to load and check status of loader
             ScheduledFuture scheduledFuture = scheduledPrinting(loader);
@@ -116,16 +113,6 @@ public class ImportController {
         }
 
         return "Loading successfully STARTED.\n";
-    }
-
-    /**
-     * Return the appropriate loader- Blocking if no hosts are provided, distributed otherwise
-     * @param keyspace name of the graph to use
-     * @param hosts collection of hosts' addressed
-     * @return Loader configured to the provided keyspace
-     */
-    private Loader getLoader(String keyspace, Collection<String> hosts){
-        return hosts == null ? new LoaderImpl(keyspace) :new LoaderClient(keyspace, hosts);
     }
 
     /**

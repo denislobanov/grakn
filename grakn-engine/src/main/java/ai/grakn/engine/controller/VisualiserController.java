@@ -158,7 +158,7 @@ public class VisualiserController {
             @ApiImplicitParam(name = "keyspace", value = "Name of graph to use", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "query", value = "Match query to execute", required = true, dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "reasoner", value = "Boolean used to decide whether run reasoner together with the current query.", required = true, dataType = "sting/boolean", paramType = "query")
-})
+    })
     private String match(Request req, Response res) {
         String keyspace = getKeyspace(req);
         boolean useReasoner = parseBoolean(req.queryParams("reasoner"));

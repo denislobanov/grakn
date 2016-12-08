@@ -21,9 +21,8 @@ package ai.grakn.migration.base.io;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.loader.Loader;
-import ai.grakn.engine.loader.LoaderImpl;
-import ai.grakn.engine.loader.client.LoaderClient;
 import com.google.common.io.Files;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.graql.InsertQuery;
@@ -42,7 +41,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -197,9 +195,7 @@ public class MigrationCLI {
     }
 
     public Loader getLoader(){
-        return getEngineURI().equals(Grakn.DEFAULT_URI)
-                ? new LoaderImpl(getKeyspace())
-                : new LoaderClient(getKeyspace(), Collections.singleton(getEngineURI()));
+        return new Loader(getKeyspace());
     }
 
     public GraknGraph getGraph(){
