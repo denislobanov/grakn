@@ -30,12 +30,16 @@ case "$1" in
 start)
 
     "${GRAKN_HOME}/bin/grakn-cassandra.sh" start
+    "${GRAKN_HOME}/bin/zookeeper-server-start.sh" -daemon "${GRAKN_HOME}/conf/kafka/zookeeper.properties"
+    "${GRAKN_HOME}/bin/kafka-server-start.sh" -daemon "${GRAKN_HOME}/conf/kafka/kafka.properties"
     "${GRAKN_HOME}/bin/grakn-engine.sh" start
     ;;
 
 stop)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" stop
+    "${GRAKN_HOME}/bin/kafka-server-stop.sh"
+    "${GRAKN_HOME}/bin/zookeeper-server-stop.sh"
     "${GRAKN_HOME}/bin/grakn-cassandra.sh" stop
     ;;
 
@@ -49,6 +53,8 @@ clean)
 status)
 
     "${GRAKN_HOME}/bin/grakn-engine.sh" status
+    "${GRAKN_HOME}/bin/kafka-server-status.sh"
+    "${GRAKN_HOME}/bin/zookeeper-server-status.sh"
     "${GRAKN_HOME}/bin/grakn-cassandra.sh" status
     ;;
 
