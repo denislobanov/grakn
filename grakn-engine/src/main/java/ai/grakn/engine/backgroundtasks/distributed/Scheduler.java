@@ -143,16 +143,21 @@ public class Scheduler implements Runnable, AutoCloseable {
      * @param state state of the task
      */
     private void scheduleTask(String id,  String configuration, TaskState state) {
-        Runnable submit = () -> sendToWorkQueue(id, configuration);
         long delay = state.runAt().getTime() - new Date().getTime();
 
         markAsScheduled(id);
         if(state.isRecurring()) {
             LOG.debug("Scheduling recurring " + id);
+
+            Runnable submit = () -> {
+                markAsScheduled(id);
+                sendToWorkQueue(id, configuration);
+            };
             schedulingService.scheduleAtFixedRate(submit, delay, state.interval(), MILLISECONDS);
         }
         else {
             LOG.debug("Scheduling once " + id+" @ "+delay);
+            Runnable submit = () -> sendToWorkQueue(id, configuration);
             schedulingService.schedule(submit, delay, MILLISECONDS);
         }
     }
@@ -162,6 +167,7 @@ public class Scheduler implements Runnable, AutoCloseable {
      * @param id task to mark the taskstorage of
      */
     private void markAsScheduled(String id) {
+        LOG.debug("Marking " + id + " as scheduled");
         zkStorage.updateState(id, SCHEDULED, null, null);
         stateStorage.updateState(id, SCHEDULED, this.getClass().getName(), null, null, null, null);
     }
@@ -184,11 +190,8 @@ public class Scheduler implements Runnable, AutoCloseable {
         Set<Pair<String, TaskState>> tasks = stateStorage.getTasks(null, null, null, 0, 0, true);
         tasks.stream()
                 .filter(p -> p.getValue().status() != STOPPED)
-                .forEach(p -> {
-                    System.out.println(p.getKey());
-                    System.out.println(p.getValue());
-                    scheduleTask(p.getKey(), p.getValue().configuration().toString(), p.getValue());
-                });
+                .forEach(p -> scheduleTask(p.getKey(), p.getValue().configuration().toString(), p.getValue()));
+        LOG.debug("Scheduler restarted " + tasks.size() + " recurring tasks");
     }
 
     private class KafkaLoggingCallback implements Callback {

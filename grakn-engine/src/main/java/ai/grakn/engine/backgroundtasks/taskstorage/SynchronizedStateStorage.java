@@ -117,7 +117,7 @@ public class SynchronizedStateStorage {
             zookeeperConnection.setData().forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes());
         }
         catch (Exception e) {
-            System.out.println(this.getClass().getName()+" Could not write to ZooKeeper! - "+e);
+            LOG.error("Could not write to ZooKeeper! - "+e);
             return false;
         }
 
