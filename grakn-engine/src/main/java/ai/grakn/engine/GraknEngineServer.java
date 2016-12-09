@@ -115,7 +115,7 @@ public class GraknEngineServer {
 
         // Submit a recurring post processing task
         DistributedTaskManager manager = new DistributedTaskManager();
-        manager.scheduleTask(new PostProcessingTask(), GraknEngineServer.class.getName(), new Date(), 60000, new JSONObject());
+        manager.scheduleTask(new PostProcessingTask(), GraknEngineServer.class.getName(), new Date(), prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE), new JSONObject());
         manager.close();
 
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
