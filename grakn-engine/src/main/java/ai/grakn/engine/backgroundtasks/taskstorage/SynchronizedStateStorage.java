@@ -20,9 +20,8 @@ package ai.grakn.engine.backgroundtasks.taskstorage;
 
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
+import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import org.apache.curator.framework.CuratorFramework;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
@@ -34,7 +33,7 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_STATE_S
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 public class SynchronizedStateStorage {
-    private final static Logger LOG = LoggerFactory.getLogger(SynchronizedStateStorage.class);
+    private final KafkaLogger LOG = KafkaLogger.getInstance();
     private static SynchronizedStateStorage instance = null;
 
     private CuratorFramework zookeeperConnection;

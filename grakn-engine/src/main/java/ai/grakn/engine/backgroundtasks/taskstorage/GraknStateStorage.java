@@ -25,6 +25,7 @@ import ai.grakn.concept.Resource;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
+import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.factory.GraphFactory;
@@ -37,9 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 import static ai.grakn.engine.util.ConfigProperties.SYSTEM_GRAPH_NAME;
@@ -52,7 +50,7 @@ public class GraknStateStorage implements StateStorage {
     private final static String TASK_VAR = "task";
     private final static int retries = 10;
 
-    private final Logger LOG = LoggerFactory.getLogger(GraknStateStorage.class);
+    private final KafkaLogger LOG = KafkaLogger.getInstance();
 
     public GraknStateStorage() {}
 
