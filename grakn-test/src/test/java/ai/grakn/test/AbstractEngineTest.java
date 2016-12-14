@@ -34,12 +34,16 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,7 +58,9 @@ public abstract class AbstractEngineTest {
     private static final String CONFIG = System.getProperty("grakn.test-profile");
     private static final Properties properties = ConfigProperties.getInstance().getProperties();
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
+    private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     private static KafkaUnit kafkaUnit;
+    private static Path tempDirectory;
 
     private static void hideLogs() {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -72,19 +78,45 @@ public abstract class AbstractEngineTest {
     @BeforeClass
     public static void startTestEngine() throws Exception {
         hideLogs();
-        if (ENGINE_ON.compareAndSet(false, true)) {
-            if (usingTitan()) {
+        if(ENGINE_ON.compareAndSet(false, true)) {
+            System.out.println("STARTING ENGINE...");
+
+            if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
                 startEmbeddedCassandra();
+                System.out.println("CASSANDRA RUNNING.");
             }
 
             kafkaUnit = new KafkaUnit(2181, 9092);
+            tempDirectory = Files.createTempDirectory("graknKafkaUnit");
+            kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
             kafkaUnit.startup();
 
             GraknEngineServer.start();
             sleep(5000);
-        }
 
-        RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
+            RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
+            System.out.println("STARTED ENGINE.");
+        }
+    }
+
+    @AfterClass
+    public static void stopTestEngine() throws Exception {
+        if(ENGINE_ON.compareAndSet(true, false)) {
+            System.out.println("STOPPING ENGINE...");
+            try {
+                GraknEngineServer.stop();
+                kafkaUnit.shutdown();
+                if (usingTitan()) {
+                    clearEmbeddedCassandra();
+                }
+            } catch (Throwable t) {
+                t.printStackTrace(System.err);
+            }
+
+            sleep(5000);
+            FileUtils.deleteDirectory(tempDirectory.toFile());
+            System.out.println("ENGINE STOPPED.");
+        }
     }
 
     protected static GraknGraphFactory factoryWithNewKeyspace() {
@@ -99,15 +131,25 @@ public abstract class AbstractEngineTest {
 
     private static void startEmbeddedCassandra() {
         try {
+            // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
             Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
-
             hideLogs();
 
             //noinspection unchecked
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
-
             hideLogs();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void clearEmbeddedCassandra() {
+        try {
+            Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
+            cl.getMethod("cleanEmbeddedCassandra").invoke(null);
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
