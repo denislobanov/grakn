@@ -121,7 +121,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
      */
     public void close() {
         consumer.wakeup();
-        executor.shutdown();
+        executor.shutdownNow();
+        LOG.debug("TaskRunner stopped");
     }
 
     private void processRecords(ConsumerRecords<String, String> records) {

@@ -124,6 +124,7 @@ public class Scheduler implements Runnable, AutoCloseable {
         schedulingService.shutdown();
         producer.flush();
         producer.close();
+        LOG.debug("Scheduler stopped.");
     }
 
     /**

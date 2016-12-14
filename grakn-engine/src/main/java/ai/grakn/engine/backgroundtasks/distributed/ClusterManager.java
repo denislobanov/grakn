@@ -37,9 +37,7 @@ import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace
 public class ClusterManager extends LeaderSelectorListenerAdapter {
     private static ClusterManager instance = null;
     private final KafkaLogger LOG = KafkaLogger.getInstance();
-
     private final String engineID;
-    private final CountDownLatch countDownLatch;
 
     private LeaderSelector leaderSelector;
     private ExecutorService executor;
@@ -57,15 +55,15 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
     private ClusterManager() {
         this.engineID = EngineID.getInstance().id();
-        // TaskRunner
-        countDownLatch = new CountDownLatch(1);
     }
 
     public void start() {
+        LOG.debug("Starting Cluster manager, called by "+Thread.currentThread().getStackTrace()[1]);
         executor = Executors.newFixedThreadPool(2);
         zookeeperStorage = SynchronizedStateStorage.getInstance();
 
         try {
+            CountDownLatch countDownLatch = new CountDownLatch(1);
             taskRunner = new TaskRunner(countDownLatch);
             executor.submit(taskRunner);
 
@@ -91,16 +89,17 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     }
 
     public void stop() {
-        taskRunner.close();
-        if(cache != null)
-            cache.close();
+        leaderSelector.interruptLeadership();
+        leaderSelector.close();
         if(scheduler != null)
             scheduler.close();
 
-        leaderSelector.close();
-        zookeeperStorage.close();
+        if(cache != null)
+            cache.close();
+        taskRunner.close();
 
-        executor.shutdown();
+        zookeeperStorage.close();
+        executor.shutdownNow();
         LOG.debug("Cluster Manager stopped");
     }
 

@@ -19,6 +19,7 @@ package ai.grakn.engine;
 
 
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
+import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.controller.AuthController;
@@ -116,6 +117,7 @@ public class GraknEngineServer {
         // Submit a recurring post processing task
         DistributedTaskManager manager = new DistributedTaskManager();
         manager.scheduleTask(new PostProcessingTask(), GraknEngineServer.class.getName(), new Date(), prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE), new JSONObject());
+        LOG.info("SUBMITTED POST PROCESSING");
         manager.close();
 
         printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
@@ -124,6 +126,7 @@ public class GraknEngineServer {
     public static void stop() {
         Spark.stop();
         ClusterManager.getInstance().stop();
+        PostProcessing.getInstance().stop();
     }
 
     /**

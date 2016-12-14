@@ -80,7 +80,7 @@ public class GraknStateStorage implements StateStorage {
             return id;
         }, true);
 
-        return result.get();
+        return result.map(x -> x).orElse(null);
     }
 
     public Boolean updateState(String id, TaskStatus status, String statusChangeBy, String engineID,
