@@ -27,6 +27,7 @@ import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,10 +35,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 public class GeoInferenceTest extends AbstractEngineTest {
-
     @BeforeClass
-    public static void onStartup(){
+    public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
     }
 
     @Test

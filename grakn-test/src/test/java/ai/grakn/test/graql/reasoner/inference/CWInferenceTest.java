@@ -27,6 +27,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
 import ai.grakn.test.graql.reasoner.graphs.CWGraph;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -36,17 +37,22 @@ import static org.junit.Assume.assumeTrue;
 
 
 public class CWInferenceTest extends AbstractEngineTest{
-
     private static GraknGraph graph;
     private static Reasoner reasoner;
     private static QueryBuilder qb;
 
     @BeforeClass
-    public static void onStartup(){
+    public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
+        startTestEngine();
         graph = CWGraph.getGraph();
         reasoner = new Reasoner(graph);
         qb = graph.graql().infer(false);
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
     }
 
     @Test

@@ -21,9 +21,7 @@ package ai.grakn.test.engine.postprocessing;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.postprocessing.PostProcessingTask;
 import ai.grakn.test.AbstractEngineTest;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.Date;
 
@@ -33,6 +31,16 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.STOPPED;
 
 public class PostProcessingTaskTest extends AbstractEngineTest {
     private StandaloneTaskManager taskManager;
+
+    @BeforeClass
+    public static void startEngine() throws Exception{
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
 
     @Before
     public void setUp() {

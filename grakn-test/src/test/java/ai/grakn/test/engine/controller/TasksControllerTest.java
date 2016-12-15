@@ -50,8 +50,14 @@ public class TasksControllerTest extends AbstractEngineTest {
     private String singleTask;
 
     @BeforeClass
-    public static void resetLogs() {
+    public static void startEngine() throws Exception{
+        startTestEngine();
         ((Logger) org.slf4j.LoggerFactory.getLogger(TasksController.class)).setLevel(Level.DEBUG);
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
     }
 
     @Before

@@ -26,7 +26,8 @@ import com.jayway.restassured.response.Response;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.util.REST;
 import mjson.Json;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -41,7 +42,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assume.assumeFalse;
 
 public class ImportControllerTest extends AbstractEngineTest {
-    private String keyspace = ConfigProperties.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY);
+    private String KEYSPACE = ConfigProperties.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY);
+
+    @BeforeClass
+    public static void startEngine() throws Exception{
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
 
 //    @Before
 //    public void setUp() {
@@ -52,7 +63,7 @@ public class ImportControllerTest extends AbstractEngineTest {
     public void testLoadOntologyAndData() {
         String dataPath = getPath("smaller_nametags.gql");
         Json body = Json.object("path", dataPath);
-        runAndAssertCorrect(body, keyspace);
+        runAndAssertCorrect(body, KEYSPACE);
     }
 
     @Test

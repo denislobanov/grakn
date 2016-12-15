@@ -33,9 +33,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 
@@ -59,6 +57,16 @@ public class SchedulerTest extends AbstractEngineTest {
     private GraknStateStorage stateStorage = new GraknStateStorage();
     private SynchronizedStateStorage zkStorage = SynchronizedStateStorage.getInstance();
     private final ClusterManager clusterManager = ClusterManager.getInstance();
+
+    @BeforeClass
+    public static void startEngine() throws Exception{
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
 
     @Before
     public void resetLogs() {

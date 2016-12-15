@@ -22,7 +22,9 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.*;
 import ai.grakn.test.AbstractEngineTest;
 import org.json.JSONObject;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -37,6 +39,16 @@ import static org.junit.Assume.assumeFalse;
 
 public class TaskManagerTest extends AbstractEngineTest {
     private DistributedTaskManager manager;
+
+    @BeforeClass
+    public static void startEngine() throws Exception{
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
 
     @Before
     public void setup() throws Exception {

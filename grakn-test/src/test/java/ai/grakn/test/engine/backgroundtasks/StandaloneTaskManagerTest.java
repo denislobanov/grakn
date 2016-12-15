@@ -28,7 +28,9 @@ import ai.grakn.test.AbstractEngineTest;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.json.JSONObject;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -44,6 +46,16 @@ import static org.junit.Assert.*;
 
 public class StandaloneTaskManagerTest extends AbstractEngineTest {
     private TaskManager taskManager;
+
+    @BeforeClass
+    public static void startEngine() throws Exception{
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
 
     @Before
     public void setUp() {

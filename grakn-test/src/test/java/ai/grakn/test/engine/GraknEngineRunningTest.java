@@ -26,7 +26,9 @@ import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.engine.util.ConfigProperties;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.var;
@@ -35,6 +37,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class GraknEngineRunningTest extends AbstractEngineTest {
+
+    @BeforeClass
+    public static void startEngine() throws Exception{
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
 
     @Before
     public void resetLogs() {

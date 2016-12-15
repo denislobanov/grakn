@@ -44,6 +44,7 @@ import static ai.grakn.engine.util.ConfigProperties.SYSTEM_GRAPH_NAME;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.util.SystemOntologyElements.*;
 import static ai.grakn.graql.Graql.var;
+import static java.lang.Thread.sleep;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 public class GraknStateStorage implements StateStorage {
@@ -279,6 +280,7 @@ public class GraknStateStorage implements StateStorage {
     }
 
     private synchronized <T> Optional<T> attemptCommitToSystemGraph(Function<GraknGraph, T> function, boolean commit){
+        double sleepFor = 100;
         for (int i = 0; i < retries; i++) {
 
             LOG.debug("Attempting commit " + i + " on system graph");
@@ -302,6 +304,17 @@ public class GraknStateStorage implements StateStorage {
                 }
             } finally {
                 LOG.debug("Took " + (System.currentTimeMillis() - time) + " to commit to system graph");
+            }
+
+            // Sleep
+            try {
+                sleep((long)sleepFor);
+            }
+            catch (InterruptedException e) {
+                LOG.error(getFullStackTrace(e));
+            }
+            finally {
+                sleepFor = ((1d/2d) * (Math.pow(2d,i) - 1d));
             }
         }
 

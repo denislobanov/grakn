@@ -24,9 +24,7 @@ import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.test.AbstractEngineTest;
 import javafx.util.Pair;
 import org.json.JSONObject;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.Date;
 import java.util.Set;
@@ -40,9 +38,18 @@ import static org.junit.Assume.assumeTrue;
 public class GraknStateStorageTest extends AbstractEngineTest {
     private StateStorage stateStorage;
 
+    @BeforeClass
+    public static void startEngine() throws Exception{
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
+
     @Before
     public void setUp() {
-        assumeTrue(usingTinker());
         stateStorage = new GraknStateStorage();
     }
 

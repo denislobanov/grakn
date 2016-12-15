@@ -25,6 +25,7 @@ import ai.grakn.graql.Reasoner;
 import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.test.graql.reasoner.graphs.AbstractGraph;
 import com.google.common.collect.Sets;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -38,10 +39,16 @@ public class AbstractInferenceTest extends AbstractEngineTest {
     private static QueryBuilder qb;
 
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws Exception {
+        startTestEngine();
         GraknGraph graph = AbstractGraph.getGraph();
         reasoner = new Reasoner(graph);
         qb = graph.graql();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
     }
 
     /**silently allows multiple isas*/

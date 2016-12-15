@@ -49,8 +49,14 @@ public class TaskRunnerTest extends AbstractEngineTest {
     private SynchronizedStateStorage zkStorage;
 
     @BeforeClass
-    public static void resetLogs() {
+    public static void startEngine() throws Exception{
+        startTestEngine();
         ((Logger) org.slf4j.LoggerFactory.getLogger(KafkaLogger.class)).setLevel(Level.DEBUG);
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
     }
 
     @Before
