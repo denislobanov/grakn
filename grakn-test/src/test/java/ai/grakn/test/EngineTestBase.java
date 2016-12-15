@@ -21,6 +21,7 @@ package ai.grakn.test;
 import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
+import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
@@ -46,6 +47,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static java.lang.Thread.sleep;
 import static ai.grakn.test.GraknTestEnv.*;
 
@@ -64,10 +66,11 @@ public class EngineTestBase {
             tempDirectory = Files.createTempDirectory("graknKafkaUnit");
             kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
             kafkaUnit.startup();
+
+            ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, DistributedTaskManager.class.getName());
             startGraph();
-            // startHTTP() is called by AbstractGraknTest
+
             GraknEngineServer.startCluster();
-            hideLogs();
 
             RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
             System.out.println("STARTED ENGINE.");

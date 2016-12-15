@@ -118,10 +118,13 @@ public class GraknEngineServer {
         ClusterManager.getInstance().start();
 
         // Submit a recurring post processing task
-        DistributedTaskManager manager = new DistributedTaskManager();
-        manager.scheduleTask(new PostProcessingTask(), GraknEngineServer.class.getName(), new Date(), prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE), new JSONObject());
+        DistributedTaskManager.getInstance()
+                              .scheduleTask(new PostProcessingTask(),
+                                            GraknEngineServer.class.getName(),
+                                            new Date(),
+                                            prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE),
+                                            new JSONObject());
         LOG.info("SUBMITTED POST PROCESSING");
-        manager.close();
     }
 
     public static void stopHTTP() {

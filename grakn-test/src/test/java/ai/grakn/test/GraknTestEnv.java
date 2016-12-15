@@ -1,10 +1,13 @@
 package ai.grakn.test;
 
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static java.lang.Thread.sleep;
 
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
+import ai.grakn.engine.util.ConfigProperties;
 import org.slf4j.LoggerFactory;
 
 import ai.grakn.Grakn;

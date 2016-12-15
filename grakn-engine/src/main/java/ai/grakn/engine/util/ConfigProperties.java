@@ -95,6 +95,7 @@ public class ConfigProperties {
 
     public static final String SCHEDULER_POLLING_FREQ = "tasks.scheduler.polling-frequency";
     public static final String TASKRUNNER_POLLING_FREQ = "tasks.runner.polling-frequency";
+    public static final String TASK_MANAGER_INSTANCE = "tasks.task-manager";
 
     private Logger LOG;
 
@@ -250,6 +251,14 @@ public class ConfigProperties {
 
     public String getProperty(String property) {
         return prop.getProperty(property);
+    }
+
+    public String getProperty(String property, String defaultValue) {
+        String res = prop.getProperty(property);
+        if(res != null)
+            return res;
+
+        return defaultValue;
     }
 
     public int getPropertyAsInt(String property) {

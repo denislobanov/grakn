@@ -43,14 +43,14 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 public class DistributedTaskManager implements TaskManager, AutoCloseable {
 	private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
     private KafkaProducer producer;
-
     private StateStorage stateStorage;
     private SynchronizedStateStorage zkStorage;
+    private static DistributedTaskManager instance = null;
 
     /**
      * Instantiate connection with Zookeeper. Create Kafka producer. Start TaskRunner. Attempt to start Scheduler.
      */
-    public DistributedTaskManager() {
+    private DistributedTaskManager() {
         try {
             producer = ConfigHelper.kafkaProducer();
             stateStorage = new GraknStateStorage();
@@ -61,6 +61,12 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
         	LOG.error("While trying to start the DistributedTaskManager", e); 
             throw new RuntimeException("Could not start task manager : "+e);
         }
+    }
+
+    public static synchronized DistributedTaskManager getInstance() {
+        if(instance == null)
+            instance = new DistributedTaskManager();
+        return instance;
     }
 
     @Override

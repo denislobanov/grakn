@@ -18,9 +18,12 @@
 
 package ai.grakn.test;
 
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static ai.grakn.test.GraknTestEnv.startGraph;
 import static ai.grakn.test.GraknTestEnv.stopGraph;
 
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
+import ai.grakn.engine.util.ConfigProperties;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -31,6 +34,7 @@ public abstract class AbstractGraknTest {
 	
     @BeforeClass
     public static void initializeGraknTests() throws Exception {
+        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, StandaloneTaskManager.class.getName());
     	startGraph();
     }
 

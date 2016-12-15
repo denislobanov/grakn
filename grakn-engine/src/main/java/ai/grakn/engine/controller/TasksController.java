@@ -24,12 +24,14 @@ import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
+import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknEngineServerException;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
 import javafx.util.Pair;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -41,8 +43,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 
+import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 import static spark.Spark.get;
 import static spark.Spark.put;
@@ -69,7 +73,17 @@ public class TasksController {
     private StateStorage stateStorage;
 
     public TasksController() {
-        taskManager = new DistributedTaskManager();
+        String mgr = ConfigProperties.getInstance().getProperty(TASK_MANAGER_INSTANCE, "ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager");
+
+        try {
+            Class cl = Class.forName(mgr);
+            taskManager = (TaskManager) cl.getMethod("getInstance").invoke(null);
+        }
+        catch(ClassNotFoundException|IllegalAccessException|NoSuchMethodException|InvocationTargetException e) {
+            LOG.error("Could not start TasksController due to exception (possibly bad configuration) - "+ getFullStackTrace(e));
+            throw new RuntimeException(e);
+        }
+
         stateStorage = taskManager.storage();
 
         get(ALL_TASKS_URI, this::getTasks);
