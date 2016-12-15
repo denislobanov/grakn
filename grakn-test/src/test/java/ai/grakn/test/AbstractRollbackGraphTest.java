@@ -24,6 +24,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import static ai.grakn.test.GraknTestEnv.*;
 
 /**
  * Abstract test class that provides an empty graph, automatically rolling back after every test to a fresh empty graph.

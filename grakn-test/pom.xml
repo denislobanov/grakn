@@ -46,6 +46,11 @@
                         <grakn.conf>../conf/test/${grakn.test-profile}/grakn-engine.properties</grakn.conf>
                         <grakn.test-profile>${grakn.test-profile}</grakn.test-profile>
                     </systemPropertyVariables>
+                    <!-- 
+					<includes>
+                    	<include>**/${testGroup}/*Test.java</include>
+                	</includes>
+                	 -->                    
                 </configuration>
             </plugin>
             <plugin>

@@ -35,6 +35,7 @@ import static ai.grakn.graql.Graql.and;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class CWInferenceTest extends AbstractGraknTest {
     private static GraknGraph graph;

@@ -43,6 +43,7 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class RecursiveInferenceTest extends AbstractGraknTest {
     @BeforeClass

@@ -34,6 +34,8 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
 import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assume.assumeFalse;
+import static ai.grakn.test.GraknTestEnv.*;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class TaskManagerTest extends EngineTestBase {
     private DistributedTaskManager manager;

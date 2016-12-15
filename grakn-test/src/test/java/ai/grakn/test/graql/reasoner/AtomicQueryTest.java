@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class AtomicQueryTest extends AbstractGraknTest {
     private static GraknGraph graph;

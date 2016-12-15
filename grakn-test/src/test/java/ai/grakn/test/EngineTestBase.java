@@ -47,8 +47,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 import static java.lang.Thread.sleep;
+import static ai.grakn.test.GraknTestEnv.*;
 
-public class EngineTestBase extends AbstractGraknTest {
+public class EngineTestBase {
     private static final Properties properties = ConfigProperties.getInstance().getProperties();
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
     private static KafkaUnit kafkaUnit;
@@ -56,15 +57,14 @@ public class EngineTestBase extends AbstractGraknTest {
 
     @BeforeClass
     public static void startTestEngine() throws Exception {
-        if(ENGINE_ON.compareAndSet(false, true)) {
+        if(ENGINE_ON.compareAndSet(false, true)) {        	
             System.out.println("STARTING ENGINE...");
-
             hideLogs();
             kafkaUnit = new KafkaUnit(2181, 9092);
             tempDirectory = Files.createTempDirectory("graknKafkaUnit");
             kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
             kafkaUnit.startup();
-
+            startGraph();
             // startHTTP() is called by AbstractGraknTest
             GraknEngineServer.startCluster();
             hideLogs();
@@ -80,6 +80,7 @@ public class EngineTestBase extends AbstractGraknTest {
             System.out.println("STOPPING ENGINE...");
             try {
                 GraknEngineServer.stopCluster();
+                stopGraph();
                 kafkaUnit.shutdown();
                 hideLogs();
             } catch (Throwable t) {

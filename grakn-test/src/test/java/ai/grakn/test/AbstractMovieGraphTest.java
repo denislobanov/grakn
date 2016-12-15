@@ -18,13 +18,15 @@
 
 package ai.grakn.test;
 
+import static ai.grakn.test.GraknTestEnv.factoryWithNewKeyspace;
+import static ai.grakn.test.GraknTestEnv.usingTinker;
+
+import org.junit.After;
+import org.junit.Before;
+
 import ai.grakn.GraknGraph;
 import ai.grakn.GraknGraphFactory;
 import ai.grakn.example.MovieGraphFactory;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 
 /**
  * Abstract test class that uses the movie graph, automatically rolling back after every test to a fresh movie graph.
