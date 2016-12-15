@@ -50,8 +50,14 @@ public class PostProcessingTest extends AbstractEngineTest {
     private String keyspace;
 
     @BeforeClass
-    public static void profile() {
+    public static void startEngine() throws Exception{
         assumeTrue(usingTinker());
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
     }
 
     @Before

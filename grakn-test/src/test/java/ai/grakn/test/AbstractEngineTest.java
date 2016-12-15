@@ -75,7 +75,6 @@ public abstract class AbstractEngineTest {
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
     }
 
-    @BeforeClass
     public static void startTestEngine() throws Exception {
         hideLogs();
         if(ENGINE_ON.compareAndSet(false, true)) {
@@ -99,7 +98,6 @@ public abstract class AbstractEngineTest {
         }
     }
 
-    @AfterClass
     public static void stopTestEngine() throws Exception {
         if(ENGINE_ON.compareAndSet(true, false)) {
             System.out.println("STOPPING ENGINE...");

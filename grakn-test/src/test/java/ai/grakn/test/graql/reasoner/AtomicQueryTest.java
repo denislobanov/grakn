@@ -35,6 +35,7 @@ import ai.grakn.util.ErrorMessage;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.admin.PatternAdmin;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -55,9 +56,15 @@ public class AtomicQueryTest extends AbstractEngineTest{
     @org.junit.Rule
     public final ExpectedException exception = ExpectedException.none();
 
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
+
     @BeforeClass
-    public static void setUpClass() {
+    public static void setUpClass() throws Exception {
         assumeTrue(usingTinker());
+        startTestEngine();
         graph = SNBGraph.getGraph();
         qb = graph.graql();
     }

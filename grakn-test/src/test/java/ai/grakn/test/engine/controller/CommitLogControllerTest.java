@@ -35,9 +35,7 @@ import ai.grakn.concept.RoleType;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.util.REST;
 import ai.grakn.util.Schema;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.UUID;
 
@@ -47,8 +45,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class CommitLogControllerTest extends AbstractEngineTest {
-    public final String KEYSPACE = "test";
+    private final String KEYSPACE = "test";
     private Cache cache = Cache.getInstance();
+
+    @BeforeClass
+    public static void startEngine() throws Exception{
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
 
     @Before
     public void setUp() throws Exception {

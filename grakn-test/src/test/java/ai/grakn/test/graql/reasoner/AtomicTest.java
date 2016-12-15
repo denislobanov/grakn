@@ -34,6 +34,7 @@ import ai.grakn.test.graql.reasoner.graphs.CWGraph;
 import ai.grakn.test.graql.reasoner.graphs.SNBGraph;
 import ai.grakn.util.ErrorMessage;
 import javafx.util.Pair;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -50,12 +51,18 @@ public class AtomicTest extends AbstractEngineTest{
     private static GraknGraph cwGraph;
 
     @BeforeClass
-    public static void onStartup(){
+    public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
+        startTestEngine();
         snbGraph = SNBGraph.getGraph();
         cwGraph = CWGraph.getGraph();
         Reasoner.linkConceptTypes(snbGraph);
         Reasoner.linkConceptTypes(cwGraph);
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
     }
 
     @org.junit.Rule

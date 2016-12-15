@@ -28,9 +28,7 @@ import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.test.AbstractEngineTest;
 import org.json.JSONObject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.Collection;
 import java.util.Date;
@@ -54,10 +52,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class TasksLoadingControllerTest extends AbstractEngineTest {
-
     private static final String keyspace = "KEYSPACE";
     private static final int NUMBER_TO_TEST = 10;
     private GraknGraph graph;
+
+    @BeforeClass
+    public static void startEngine() throws Exception{
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
+    }
 
     @Before
     public void setup() {

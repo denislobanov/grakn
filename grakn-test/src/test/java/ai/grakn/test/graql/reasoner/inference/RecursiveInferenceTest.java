@@ -33,6 +33,7 @@ import ai.grakn.test.graql.reasoner.graphs.NguyenGraph;
 import ai.grakn.test.graql.reasoner.graphs.PathGraphSymmetric;
 import ai.grakn.test.graql.reasoner.graphs.TailRecursionGraph;
 import ai.grakn.test.graql.reasoner.graphs.TestGraph;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -44,10 +45,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 public class RecursiveInferenceTest extends AbstractEngineTest{
-
     @BeforeClass
-    public static void onStartup(){
+    public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
+        startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        stopTestEngine();
     }
 
     /**from Vieille - Recursive Axioms in Deductive Databases p. 192*/
