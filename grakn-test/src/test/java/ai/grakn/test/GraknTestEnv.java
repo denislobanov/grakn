@@ -41,12 +41,10 @@ public interface GraknTestEnv {
         }
 
         GraknEngineServer.startHTTP();
-        sleep(5000);
     }
 
     static void stopGraph() throws Exception {
         GraknEngineServer.stopHTTP();
-        sleep(5000);
 
         if (usingTitan()) {
             clearEmbeddedCassandra();

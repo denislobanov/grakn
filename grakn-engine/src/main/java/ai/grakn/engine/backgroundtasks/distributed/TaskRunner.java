@@ -258,7 +258,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
             LOG.debug(">>>>>>>>>>>> released mutex for - "+id);
         }
         catch (Exception e) {
-            LOG.error("********************************\nCOULD NOT RELEASE MUTEX FOR TASK - " + id + "\n" + getFullStackTrace(e) + "********************************\n");
+            LOG.error("********************************\nCOULD NOT RELEASE MUTEX FOR TASK - " + id + "\n" + getFullStackTrace(e) + "\n********************************");
         }
     }
 

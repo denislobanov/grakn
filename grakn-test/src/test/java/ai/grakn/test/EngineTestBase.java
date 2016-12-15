@@ -23,9 +23,6 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
-import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
-import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
-import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
@@ -45,6 +42,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
@@ -56,43 +54,66 @@ public class EngineTestBase {
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
     private static KafkaUnit kafkaUnit;
     private static Path tempDirectory;
+    private static final ReentrantLock stopStartLock = new ReentrantLock();
 
     @BeforeClass
     public static void startTestEngine() throws Exception {
-        if(ENGINE_ON.compareAndSet(false, true)) {        	
+        if(ENGINE_ON.compareAndSet(false, true)) {
+            stopStartLock.lock();
             System.out.println("STARTING ENGINE...");
-            hideLogs();
-            kafkaUnit = new KafkaUnit(2181, 9092);
-            tempDirectory = Files.createTempDirectory("graknKafkaUnit");
-            kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
-            kafkaUnit.startup();
 
-            ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, DistributedTaskManager.class.getName());
-            startGraph();
+            try {
+                hideLogs();
+                startEngine();
+                RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
 
-            GraknEngineServer.startCluster();
-
-            RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-            System.out.println("STARTED ENGINE.");
+                System.out.println("STARTED ENGINE.");
+            }
+            catch (Exception e) {
+                throw new Exception(e);
+            }
+            finally {
+                stopStartLock.unlock();
+            }
         }
+    }
+
+    private static void startEngine() throws Exception {
+        kafkaUnit = new KafkaUnit(2181, 9092);
+
+        tempDirectory = Files.createTempDirectory("graknKafkaUnit");
+        kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
+        kafkaUnit.startup();
+
+        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, DistributedTaskManager.class.getName());
+        startGraph();
+
+        GraknEngineServer.startCluster();
+        sleep(5000);
     }
 
     @AfterClass
     public static void stopTestEngine() throws Exception {
         if(ENGINE_ON.compareAndSet(true, false)) {
+            stopStartLock.lock();
             System.out.println("STOPPING ENGINE...");
-            try {
-                GraknEngineServer.stopCluster();
-                stopGraph();
-                kafkaUnit.shutdown();
-                hideLogs();
-            } catch (Throwable t) {
-                t.printStackTrace(System.err);
-            }
 
-            sleep(3000);
-            FileUtils.deleteDirectory(tempDirectory.toFile());
-            System.out.println("ENGINE STOPPED.");
+            try {
+                stopGraph();
+                GraknEngineServer.stopCluster();
+                kafkaUnit.shutdown();
+
+                sleep(5000);
+                FileUtils.deleteDirectory(tempDirectory.toFile());
+
+                System.out.println("ENGINE STOPPED.");
+            }
+            catch (Throwable t) {
+                throw new Exception(t);
+            }
+            finally {
+                stopStartLock.unlock();
+            }
         }
     }
 
