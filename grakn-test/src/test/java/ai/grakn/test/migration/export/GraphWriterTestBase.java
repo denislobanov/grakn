@@ -43,6 +43,10 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
+import static ai.grakn.test.GraknTestEnv.*;
+import static ai.grakn.test.GraknTestEnv.*;
+import static ai.grakn.test.GraknTestEnv.*;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
@@ -51,7 +55,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
     @Before
     public void createWriter(){
-        copy = AbstractGraknTest.factoryWithNewKeyspace().getGraph();
+        copy = factoryWithNewKeyspace().getGraph();
         writer = new GraphWriter(graph);
     }
 

@@ -42,6 +42,7 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC
 import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assume.assumeFalse;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class TaskRunnerTest extends EngineTestBase {
     private KafkaProducer<String, String> producer;

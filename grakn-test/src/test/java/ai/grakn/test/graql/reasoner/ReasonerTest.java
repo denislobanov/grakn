@@ -50,6 +50,7 @@ import static ai.grakn.graql.Graql.and;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
+import static ai.grakn.test.GraknTestEnv.*;
 
 public class ReasonerTest extends AbstractGraknTest {
     @BeforeClass
