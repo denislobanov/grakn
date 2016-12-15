@@ -60,9 +60,10 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     public void start() {
         LOG.debug("Starting Cluster manager, called by "+Thread.currentThread().getStackTrace()[1]);
         executor = Executors.newFixedThreadPool(2);
-        zookeeperStorage = SynchronizedStateStorage.getInstance();
 
         try {
+            zookeeperStorage = SynchronizedStateStorage.getInstance();
+
             CountDownLatch countDownLatch = new CountDownLatch(1);
             taskRunner = new TaskRunner(countDownLatch);
             executor.submit(taskRunner);
@@ -99,7 +100,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         taskRunner.close();
 
         zookeeperStorage.close();
-        executor.shutdownNow();
+        executor.shutdown();
         LOG.debug("Cluster Manager stopped");
     }
 

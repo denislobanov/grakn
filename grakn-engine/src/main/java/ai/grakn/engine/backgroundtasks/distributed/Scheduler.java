@@ -116,12 +116,16 @@ public class Scheduler implements Runnable, AutoCloseable {
         finally {
             consumer.commitSync();
             consumer.close();
+            consumer = null;
         }
     }
 
     public void close() {
         consumer.wakeup();
         schedulingService.shutdown();
+        if(consumer != null)
+            consumer.close();
+
         producer.flush();
         producer.close();
         LOG.debug("Scheduler stopped.");

@@ -55,12 +55,13 @@ import static org.junit.Assert.assertTrue;
  */
 public class SchedulerTest extends EngineTestBase {
     private GraknStateStorage stateStorage = new GraknStateStorage();
-    private SynchronizedStateStorage zkStorage = SynchronizedStateStorage.getInstance();
+    private SynchronizedStateStorage zkStorage;
     private final ClusterManager clusterManager = ClusterManager.getInstance();
 
     @Before
-    public void resetLogs() {
+    public void setup() throws Exception {
         ((Logger) org.slf4j.LoggerFactory.getLogger(KafkaLogger.class)).setLevel(Level.DEBUG);
+        zkStorage = SynchronizedStateStorage.getInstance();
     }
 
     @Test

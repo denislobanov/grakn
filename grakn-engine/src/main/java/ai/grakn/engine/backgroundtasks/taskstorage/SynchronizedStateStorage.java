@@ -38,23 +38,15 @@ public class SynchronizedStateStorage {
 
     private CuratorFramework zookeeperConnection;
 
-    private SynchronizedStateStorage() {
-        try {
-            zookeeperConnection = ConfigHelper.client();
-            zookeeperConnection.start();
+    private SynchronizedStateStorage() throws Exception {
+        zookeeperConnection = ConfigHelper.client();
+        zookeeperConnection.start();
+        zookeeperConnection.blockUntilConnected();
 
-            if(!zookeeperConnection.blockUntilConnected(1, TimeUnit.MINUTES)){
-                throw new InterruptedException("Could not start zookeeper zookeeperConnection");
-            }
-
-            createZKPaths();
-        } catch (Exception e){
-            LOG.error("Could not instantiate connection to zookeeper " + getFullStackTrace(e));
-            throw new RuntimeException(e);
-        }
+        createZKPaths();
     }
 
-    public static synchronized SynchronizedStateStorage getInstance(){
+    public static synchronized SynchronizedStateStorage getInstance() throws Exception {
         if(instance == null){
             instance = new SynchronizedStateStorage();
         }
