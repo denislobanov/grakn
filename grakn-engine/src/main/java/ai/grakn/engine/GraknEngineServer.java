@@ -71,11 +71,12 @@ public class GraknEngineServer {
     public static final boolean isPasswordProtected = prop.getPropertyAsBool(ConfigProperties.PASSWORD_PROTECTED_PROPERTY);
 
     public static void main(String[] args) {
-        start();
+        startHTTP();
+        startCluster();
+        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
-    public static void start() {
-
+    public static void startHTTP() {
         // Set host name
         ipAddress(prop.getProperty(ConfigProperties.SERVER_HOST_NAME));
 
@@ -108,23 +109,26 @@ public class GraknEngineServer {
             response.body("New exception: " + e.getMessage() + " - Please refer to grakn.log file for full stack trace.");
         });
 
-        // Start background task cluster.
-        ClusterManager.getInstance().start();
-
         // This method will block until all the controllers are ready to serve requests
         awaitInitialization();
+    }
+
+    public static void startCluster() {
+        // Start background task cluster.
+        ClusterManager.getInstance().start();
 
         // Submit a recurring post processing task
         DistributedTaskManager manager = new DistributedTaskManager();
         manager.scheduleTask(new PostProcessingTask(), GraknEngineServer.class.getName(), new Date(), prop.getPropertyAsInt(ConfigProperties.TIME_LAPSE), new JSONObject());
         LOG.info("SUBMITTED POST PROCESSING");
         manager.close();
-
-        printStartMessage(prop.getProperty(ConfigProperties.SERVER_HOST_NAME), prop.getProperty(ConfigProperties.SERVER_PORT_NUMBER), prop.getLogFilePath());
     }
 
-    public static void stop() {
+    public static void stopHTTP() {
         Spark.stop();
+    }
+
+    public static void stopCluster() {
         ClusterManager.getInstance().stop();
         PostProcessing.getInstance().stop();
     }

@@ -29,7 +29,7 @@ import ai.grakn.concept.Rule;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.Graql;
 import ai.grakn.migration.export.GraphWriter;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.migration.AbstractGraknMigratorTest;
 import junit.framework.Assert;
 import org.junit.After;
@@ -50,7 +50,7 @@ public abstract class GraphWriterTestBase extends AbstractGraknMigratorTest {
 
     @Before
     public void createWriter(){
-        copy = AbstractEngineTest.factoryWithNewKeyspace().getGraph();
+        copy = AbstractGraknTest.factoryWithNewKeyspace().getGraph();
         writer = new GraphWriter(graph);
     }
 

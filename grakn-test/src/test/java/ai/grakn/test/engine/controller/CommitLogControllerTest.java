@@ -24,10 +24,9 @@ import ai.grakn.concept.Entity;
 import ai.grakn.concept.RelationType;
 import ai.grakn.concept.Resource;
 import ai.grakn.concept.ResourceType;
-import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import com.jayway.restassured.http.ContentType;
 import ai.grakn.concept.Concept;
 import ai.grakn.concept.EntityType;
@@ -44,19 +43,9 @@ import static com.jayway.restassured.RestAssured.given;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CommitLogControllerTest extends AbstractEngineTest {
+public class CommitLogControllerTest extends EngineTestBase {
     private final String KEYSPACE = "test";
     private Cache cache = Cache.getInstance();
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
 
     @Before
     public void setUp() throws Exception {

@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import com.google.common.collect.Sets;
 import ai.grakn.concept.RuleType;
 import ai.grakn.graql.MatchQuery;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 
-public class CWInferenceTest extends AbstractEngineTest{
+public class CWInferenceTest extends AbstractGraknTest {
     private static GraknGraph graph;
     private static Reasoner reasoner;
     private static QueryBuilder qb;
@@ -44,15 +44,9 @@ public class CWInferenceTest extends AbstractEngineTest{
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
-        startTestEngine();
         graph = CWGraph.getGraph();
         reasoner = new Reasoner(graph);
         qb = graph.graql().infer(false);
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
     }
 
     @Test

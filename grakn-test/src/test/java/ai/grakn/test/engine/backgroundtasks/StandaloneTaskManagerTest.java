@@ -24,13 +24,11 @@ import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import org.json.JSONObject;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -44,18 +42,8 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.*;
 
-public class StandaloneTaskManagerTest extends AbstractEngineTest {
+public class StandaloneTaskManagerTest extends EngineTestBase {
     private TaskManager taskManager;
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
 
     @Before
     public void setUp() {

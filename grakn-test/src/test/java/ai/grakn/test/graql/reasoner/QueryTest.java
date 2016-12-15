@@ -18,13 +18,12 @@
 
 package ai.grakn.test.graql.reasoner;
 
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import com.google.common.collect.Sets;
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.internal.reasoner.atom.Atomic;
-import ai.grakn.graql.internal.reasoner.atom.AtomicFactory;
 import ai.grakn.graql.internal.reasoner.query.AtomicQuery;
 import ai.grakn.graql.internal.reasoner.query.Query;
 import ai.grakn.test.graql.reasoner.graphs.GeoGraph;
@@ -40,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class QueryTest extends AbstractEngineTest {
+public class QueryTest extends AbstractGraknTest {
 
     private static GraknGraph graph;
     private static QueryBuilder qb;
@@ -48,14 +47,8 @@ public class QueryTest extends AbstractEngineTest {
     @BeforeClass
     public static void setUpClass() throws Exception {
         assumeTrue(usingTinker());
-        startTestEngine();
         graph = SNBGraph.getGraph();
         qb = graph.graql();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
     }
 
     @Test

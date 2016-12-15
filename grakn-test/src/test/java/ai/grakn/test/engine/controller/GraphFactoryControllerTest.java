@@ -21,13 +21,11 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import ai.grakn.util.REST.GraphConfig;
 import com.jayway.restassured.response.Response;
 import mjson.Json;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static ai.grakn.util.REST.Request.GRAPH_CONFIG_PARAM;
@@ -40,18 +38,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class GraphFactoryControllerTest extends AbstractEngineTest {
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
-
+public class GraphFactoryControllerTest extends EngineTestBase {
 	@Test
 	public void testKeyspaceList() {
 		Grakn.factory(Grakn.DEFAULT_URI, "grakntest").getGraph().close();

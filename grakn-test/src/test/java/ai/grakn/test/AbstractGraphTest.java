@@ -28,19 +28,9 @@ import org.junit.BeforeClass;
 /**
  * Abstract test class that provides a new empty graph every test that can be committed to.
  */
-public abstract class AbstractGraphTest extends AbstractEngineTest {
+public abstract class AbstractGraphTest extends AbstractGraknTest {
     protected GraknGraphFactory factory;
     protected GraknGraph graph;
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
 
     @Before
     public void createGraph() {
