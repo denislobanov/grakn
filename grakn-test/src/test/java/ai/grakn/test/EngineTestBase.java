@@ -42,7 +42,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
@@ -54,12 +53,10 @@ public class EngineTestBase {
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
     private static KafkaUnit kafkaUnit;
     private static Path tempDirectory;
-    private static final ReentrantLock stopStartLock = new ReentrantLock();
 
     @BeforeClass
     public static void startTestEngine() throws Exception {
         if(ENGINE_ON.compareAndSet(false, true)) {
-            stopStartLock.lock();
             System.out.println("STARTING ENGINE...");
 
             try {
@@ -71,9 +68,6 @@ public class EngineTestBase {
             }
             catch (Exception e) {
                 throw new Exception(e);
-            }
-            finally {
-                stopStartLock.unlock();
             }
         }
     }
@@ -95,7 +89,6 @@ public class EngineTestBase {
     @AfterClass
     public static void stopTestEngine() throws Exception {
         if(ENGINE_ON.compareAndSet(true, false)) {
-            stopStartLock.lock();
             System.out.println("STOPPING ENGINE...");
 
             try {
@@ -110,9 +103,6 @@ public class EngineTestBase {
             }
             catch (Throwable t) {
                 throw new Exception(t);
-            }
-            finally {
-                stopStartLock.unlock();
             }
         }
     }

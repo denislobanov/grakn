@@ -113,6 +113,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
         } finally {
             consumer.commitSync();
             consumer.close();
+            consumer = null;
         }
     }
 
@@ -121,7 +122,11 @@ public class TaskRunner implements Runnable, AutoCloseable {
      */
     public void close() {
         consumer.wakeup();
-        executor.shutdownNow();
+        executor.shutdown();
+
+        if(consumer != null)
+            consumer.close();
+
         LOG.debug("TaskRunner stopped");
     }
 
