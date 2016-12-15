@@ -66,7 +66,7 @@ public class Loader {
         this.keyspace = keyspace;
         this.queries = new HashSet<>();
 
-        this.manager = new DistributedTaskManager();
+        this.manager = DistributedTaskManager.getInstance();
         setBatchSize(properties.getPropertyAsInt(BATCH_SIZE_PROPERTY));
     }
 

@@ -108,6 +108,7 @@ public class GraknStateStorageTest extends EngineTestBase {
     @Test
     public void testUpdateInvalid() {
         String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
+        assertNotNull(id);
 
         stateStorage.updateState(null, SCHEDULED, "bla", "example.com", new UnsupportedOperationException(), "blabla", null);
         TaskState state = stateStorage.getState(id);
@@ -121,8 +122,9 @@ public class GraknStateStorageTest extends EngineTestBase {
     @Test
     public void testGetByStatus() {
         String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
-        Set<Pair<String, TaskState>> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
+        assertNotNull(id);
 
+        Set<Pair<String, TaskState>> res = stateStorage.getTasks(CREATED, null, null, 0, 0);
         assertTrue(res.parallelStream()
                         .map(Pair::getKey)
                         .filter(x -> x.equals(id))
@@ -133,8 +135,9 @@ public class GraknStateStorageTest extends EngineTestBase {
     @Test
     public void testGetByCreator() {
         String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
-        Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
+        assertNotNull(id);
 
+        Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, this.getClass().getName(), 0, 0);
         assertTrue(res.parallelStream()
                         .map(Pair::getKey)
                         .filter(x -> x.equals(id))
@@ -145,8 +148,9 @@ public class GraknStateStorageTest extends EngineTestBase {
     @Test
     public void testGetByClassName() {
         String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
-        Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
+        assertNotNull(id);
 
+        Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, TestTask.class.getName(), null, 0, 0);
         assertTrue(res.parallelStream()
                         .map(Pair::getKey)
                         .filter(x -> x.equals(id))
@@ -157,8 +161,9 @@ public class GraknStateStorageTest extends EngineTestBase {
     @Test
     public void testGetAll() {
         String id = stateStorage.newState(TestTask.class.getName(), this.getClass().getName(), new Date(), false, 0, null);
-        Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, null, 0, 0);
+        assertNotNull(id);
 
+        Set<Pair<String, TaskState>> res = stateStorage.getTasks(null, null, null, 0, 0);
         assertTrue(res.parallelStream()
                         .map(Pair::getKey)
                         .filter(x -> x.equals(id))
