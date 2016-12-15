@@ -72,6 +72,7 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
     @Override
     public void close() {
         producer.close();
+        instance = null;
     }
 
     @Override

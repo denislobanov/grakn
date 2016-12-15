@@ -67,6 +67,11 @@ public class KafkaLogger {
         return instance;
     }
 
+    public void finalize() {
+        producer.flush();
+        producer.close();
+    }
+
     public void debug(String msg) {
         if(logLevel.level() <= LogLevel.DEBUG.level())
             sendMsg(LogLevel.DEBUG.toString(), Thread.currentThread().getStackTrace()[2].toString(), msg);
