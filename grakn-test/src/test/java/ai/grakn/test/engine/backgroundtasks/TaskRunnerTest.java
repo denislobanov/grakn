@@ -25,7 +25,7 @@ import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import javafx.util.Pair;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -43,20 +43,14 @@ import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
-public class TaskRunnerTest extends AbstractEngineTest {
+public class TaskRunnerTest extends EngineTestBase {
     private KafkaProducer<String, String> producer;
     private StateStorage stateStorage;
     private SynchronizedStateStorage zkStorage;
 
     @BeforeClass
     public static void startEngine() throws Exception{
-        startTestEngine();
         ((Logger) org.slf4j.LoggerFactory.getLogger(KafkaLogger.class)).setLevel(Level.DEBUG);
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
     }
 
     @Before

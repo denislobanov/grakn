@@ -21,11 +21,9 @@ package ai.grakn.test.engine.backgroundtasks;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.taskstorage.InMemoryStateStorage;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import javafx.util.Pair;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Date;
@@ -36,18 +34,8 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static org.junit.Assert.*;
 
-public class InMemoryStateStorageTest extends AbstractEngineTest {
+public class InMemoryStateStorageTest extends EngineTestBase {
     private StateStorage stateStorage;
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
 
     @Before
     public void setUp() {

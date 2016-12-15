@@ -31,8 +31,10 @@ import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.Pattern;
 import ai.grakn.graql.admin.PatternAdmin;
 import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.EngineTestBase;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,6 +42,8 @@ import org.junit.Test;
 import java.util.Collection;
 
 import static ai.grakn.graql.Graql.parse;
+import static ai.grakn.test.EngineTestBase.loadOntology;
+import static ai.grakn.test.EngineTestBase.readFileAsString;
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -48,12 +52,18 @@ public class LoaderTest extends AbstractGraphTest {
 
     @BeforeClass
     public static void startup() throws Exception {
+        EngineTestBase.startTestEngine();
         ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(GraknStateStorage.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(ClusterManager.class)).setLevel(Level.DEBUG);
+    }
+
+    @AfterClass
+    public static void tearDown() throws Exception {
+        EngineTestBase.stopTestEngine();
     }
 
     @Before

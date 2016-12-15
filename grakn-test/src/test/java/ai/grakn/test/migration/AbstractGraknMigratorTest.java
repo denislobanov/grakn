@@ -27,17 +27,18 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.ResourceType.DataType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
-import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.migration.base.Migrator;
 import ai.grakn.migration.base.io.MigrationLoader;
 import ai.grakn.test.AbstractGraphTest;
+import ai.grakn.test.EngineTestBase;
 import ai.grakn.util.Schema;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.google.common.io.Files;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
@@ -56,14 +57,21 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class AbstractGraknMigratorTest extends AbstractGraphTest {
-
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
-    public static void setLogLevel(){
+    public static void setLogLevel() throws Exception {
         Logger logger = (Logger) org.slf4j.LoggerFactory.getLogger(Loader.class);
         logger.setLevel(Level.DEBUG);
+
+        // We will be submitting tasks to Engine, and checking if they have completed.
+        EngineTestBase.startTestEngine();
+    }
+
+    @AfterClass
+    public static void stopEngine() throws Exception {
+        EngineTestBase.stopTestEngine();
     }
 
     protected static String getFileAsString(String component, String fileName){

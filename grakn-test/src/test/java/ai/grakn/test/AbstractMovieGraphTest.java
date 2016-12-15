@@ -30,19 +30,9 @@ import org.junit.BeforeClass;
  * Abstract test class that uses the movie graph, automatically rolling back after every test to a fresh movie graph.
  * Do not commit to this graph, because it is shared between all tests for performance!
  */
-public abstract class AbstractMovieGraphTest extends AbstractEngineTest {
+public abstract class AbstractMovieGraphTest extends AbstractGraknTest {
     protected static GraknGraphFactory factory;
     protected static GraknGraph graph;
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
 
     @Before
     public void createGraph() {

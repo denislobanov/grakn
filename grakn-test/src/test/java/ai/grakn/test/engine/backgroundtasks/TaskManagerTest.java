@@ -20,11 +20,9 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.*;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import org.json.JSONObject;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -37,18 +35,8 @@ import static java.util.Collections.singletonMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
-public class TaskManagerTest extends AbstractEngineTest {
+public class TaskManagerTest extends EngineTestBase {
     private DistributedTaskManager manager;
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
 
     @Before
     public void setup() throws Exception {

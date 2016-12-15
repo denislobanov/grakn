@@ -18,9 +18,7 @@
 
 package ai.grakn.test;
 
-import ai.grakn.Grakn;
 import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
@@ -32,9 +30,9 @@ import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -45,131 +43,72 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 import static java.lang.Thread.sleep;
 
-/**
- * Abstract test class that automatically starts the backend and engine and provides a method to get a graph factory
- */
-public abstract class AbstractEngineTest {
-    private static final String CONFIG = System.getProperty("grakn.test-profile");
+public class EngineTestBase extends AbstractGraknTest {
     private static final Properties properties = ConfigProperties.getInstance().getProperties();
     private static AtomicBoolean ENGINE_ON = new AtomicBoolean(false);
-    private static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     private static KafkaUnit kafkaUnit;
     private static Path tempDirectory;
 
-    private static void hideLogs() {
-        Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        logger.setLevel(Level.DEBUG);
-
-        ((Logger) org.slf4j.LoggerFactory.getLogger(SynchronizedStateStorage.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
-        ((Logger) org.slf4j.LoggerFactory.getLogger(GraknStateStorage.class)).setLevel(Level.DEBUG);
-
-        // Hide kafka logs
-        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
-    }
-
+    @BeforeClass
     public static void startTestEngine() throws Exception {
-        hideLogs();
         if(ENGINE_ON.compareAndSet(false, true)) {
             System.out.println("STARTING ENGINE...");
 
-            if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
-                startEmbeddedCassandra();
-                System.out.println("CASSANDRA RUNNING.");
-            }
-
+            hideLogs();
             kafkaUnit = new KafkaUnit(2181, 9092);
             tempDirectory = Files.createTempDirectory("graknKafkaUnit");
             kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
             kafkaUnit.startup();
 
-            GraknEngineServer.start();
-            sleep(5000);
+            // startHTTP() is called by AbstractGraknTest
+            GraknEngineServer.startCluster();
+            hideLogs();
 
             RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
             System.out.println("STARTED ENGINE.");
         }
     }
 
+    @AfterClass
     public static void stopTestEngine() throws Exception {
         if(ENGINE_ON.compareAndSet(true, false)) {
             System.out.println("STOPPING ENGINE...");
             try {
-                GraknEngineServer.stop();
+                GraknEngineServer.stopCluster();
                 kafkaUnit.shutdown();
-                if (usingTitan()) {
-                    clearEmbeddedCassandra();
-                }
+                hideLogs();
             } catch (Throwable t) {
                 t.printStackTrace(System.err);
             }
 
-            sleep(5000);
+            sleep(3000);
             FileUtils.deleteDirectory(tempDirectory.toFile());
             System.out.println("ENGINE STOPPED.");
         }
     }
 
-    protected static GraknGraphFactory factoryWithNewKeyspace() {
-        String keyspace;
-        if (usingOrientDB()) {
-            keyspace = "memory";
-        } else {
-            keyspace = UUID.randomUUID().toString().replaceAll("-", "");
-        }
-        return Grakn.factory(Grakn.DEFAULT_URI, keyspace);
-    }
+    private static void hideLogs() {
+        Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        logger.setLevel(Level.OFF);
+        org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
 
-    private static void startEmbeddedCassandra() {
-        try {
-            // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
-            Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
-            hideLogs();
-
-            //noinspection unchecked
-            cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
-            hideLogs();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void clearEmbeddedCassandra() {
-        try {
-            Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
-            cl.getMethod("cleanEmbeddedCassandra").invoke(null);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    protected static boolean usingTinker() {
-        return "tinker".equals(CONFIG);
-    }
-
-    protected static boolean usingTitan() {
-        return "titan".equals(CONFIG);
-    }
-
-    protected static boolean usingOrientDB() {
-        return "orientdb".equals(CONFIG);
+//        ((Logger) org.slf4j.LoggerFactory.getLogger(SynchronizedStateStorage.class)).setLevel(Level.DEBUG);
+//        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
+//        ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
+//        ((Logger) org.slf4j.LoggerFactory.getLogger(GraknStateStorage.class)).setLevel(Level.DEBUG);
     }
 
     protected String getPath(String file) {
-        return AbstractEngineTest.class.getResource("/"+file).getPath();
+        return AbstractGraknTest.class.getResource("/"+file).getPath();
     }
 
-    protected String readFileAsString(String file) {
-        InputStream stream = AbstractEngineTest.class.getResourceAsStream("/"+file);
+    public static String readFileAsString(String file) {
+        InputStream stream = AbstractGraknTest.class.getResourceAsStream("/"+file);
 
         try {
             return IOUtils.toString(stream);
@@ -179,7 +118,7 @@ public abstract class AbstractEngineTest {
         }
     }
 
-    protected void loadOntology(String file, String graphName) {
+    public static void loadOntology(String file, String graphName) {
         try(GraknGraph graph = GraphFactory.getInstance().getGraph(graphName)) {
 
             String ontology = readFileAsString(file);

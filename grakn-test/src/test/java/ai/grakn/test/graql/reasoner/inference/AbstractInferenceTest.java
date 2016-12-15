@@ -22,7 +22,7 @@ import ai.grakn.GraknGraph;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.QueryBuilder;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AbstractGraph;
 import com.google.common.collect.Sets;
 import org.junit.AfterClass;
@@ -33,22 +33,15 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 
-public class AbstractInferenceTest extends AbstractEngineTest {
-
+public class AbstractInferenceTest extends AbstractGraknTest {
     private static Reasoner reasoner;
     private static QueryBuilder qb;
 
     @BeforeClass
     public static void setUpClass() throws Exception {
-        startTestEngine();
         GraknGraph graph = AbstractGraph.getGraph();
         reasoner = new Reasoner(graph);
         qb = graph.graql();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
     }
 
     /**silently allows multiple isas*/

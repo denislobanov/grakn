@@ -31,7 +31,7 @@ import ai.grakn.engine.postprocessing.Cache;
 import ai.grakn.engine.postprocessing.PostProcessing;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.graph.internal.AbstractGraknGraph;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import ai.grakn.util.Schema;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -43,7 +43,7 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
-public class PostProcessingTest extends AbstractEngineTest {
+public class PostProcessingTest extends EngineTestBase {
     private PostProcessing postProcessing;
     private GraknGraph graknGraph;
     private Cache cache;
@@ -52,12 +52,6 @@ public class PostProcessingTest extends AbstractEngineTest {
     @BeforeClass
     public static void startEngine() throws Exception{
         assumeTrue(usingTinker());
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
     }
 
     @Before

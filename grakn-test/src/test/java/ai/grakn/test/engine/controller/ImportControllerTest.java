@@ -21,13 +21,11 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Entity;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import com.jayway.restassured.response.Response;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.util.REST;
 import mjson.Json;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Collection;
@@ -39,21 +37,9 @@ import static ai.grakn.util.REST.Request.KEYSPACE_PARAM;
 import static com.jayway.restassured.RestAssured.post;
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assume.assumeFalse;
 
-public class ImportControllerTest extends AbstractEngineTest {
+public class ImportControllerTest extends EngineTestBase {
     private String KEYSPACE = ConfigProperties.getInstance().getProperty(DEFAULT_KEYSPACE_PROPERTY);
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
-
 //    @Before
 //    public void setUp() {
 //        assumeFalse(usingTinker());

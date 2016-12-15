@@ -22,13 +22,11 @@ import ai.grakn.GraknGraph;
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
 import ai.grakn.factory.GraphFactory;
-import ai.grakn.test.AbstractEngineTest;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.test.EngineTestBase;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static ai.grakn.graql.Graql.var;
@@ -36,17 +34,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class GraknEngineRunningTest extends AbstractEngineTest {
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
+public class GraknEngineRunningTest extends EngineTestBase {
 
     @Before
     public void resetLogs() {
@@ -65,13 +53,13 @@ public class GraknEngineRunningTest extends AbstractEngineTest {
     
     @Test
     public void graknEngineNotRunning() throws Exception {
-        GraknEngineServer.stop();
+        GraknEngineServer.stopHTTP();
         Thread.sleep(5000);
 
         boolean running = GraknEngineServer.isRunning();
         assertFalse(running);
 
-        GraknEngineServer.start();
+        GraknEngineServer.startHTTP();
         Thread.sleep(5000);
     }
 }

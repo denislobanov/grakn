@@ -21,7 +21,7 @@ package ai.grakn.test.engine.controller;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.backgroundtasks.TaskManager;
 import ai.grakn.engine.controller.TasksController;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import ai.grakn.test.engine.backgroundtasks.LongRunningTask;
 import ai.grakn.test.engine.backgroundtasks.TestTask;
 import ch.qos.logback.classic.Level;
@@ -46,18 +46,12 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
-public class TasksControllerTest extends AbstractEngineTest {
+public class TasksControllerTest extends EngineTestBase {
     private String singleTask;
 
     @BeforeClass
     public static void startEngine() throws Exception{
-        startTestEngine();
         ((Logger) org.slf4j.LoggerFactory.getLogger(TasksController.class)).setLevel(Level.DEBUG);
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
     }
 
     @Before

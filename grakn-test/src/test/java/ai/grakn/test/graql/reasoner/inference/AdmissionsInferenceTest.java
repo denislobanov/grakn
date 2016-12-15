@@ -20,7 +20,7 @@ package ai.grakn.test.graql.reasoner.inference;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.graql.Reasoner;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.AdmissionsGraph;
 import com.google.common.collect.Sets;
 import ai.grakn.graql.MatchQuery;
@@ -34,16 +34,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 
-public class AdmissionsInferenceTest extends AbstractEngineTest{
+public class AdmissionsInferenceTest extends AbstractGraknTest {
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
     }
 
     @Test

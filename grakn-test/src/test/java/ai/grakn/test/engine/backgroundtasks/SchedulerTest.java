@@ -25,7 +25,7 @@ import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.EngineTestBase;
 import javafx.util.Pair;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -53,20 +53,10 @@ import static org.junit.Assert.assertTrue;
 /**
  * Each test needs to be run with a clean Kafka to pass
  */
-public class SchedulerTest extends AbstractEngineTest {
+public class SchedulerTest extends EngineTestBase {
     private GraknStateStorage stateStorage = new GraknStateStorage();
     private SynchronizedStateStorage zkStorage = SynchronizedStateStorage.getInstance();
     private final ClusterManager clusterManager = ClusterManager.getInstance();
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
 
     @Before
     public void resetLogs() {

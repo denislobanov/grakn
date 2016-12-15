@@ -20,10 +20,8 @@ package ai.grakn.test.engine.backgroundtasks;
 
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
-import ai.grakn.test.AbstractEngineTest;
-import org.junit.AfterClass;
+import ai.grakn.test.EngineTestBase;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.UUID;
@@ -32,18 +30,8 @@ import static ai.grakn.engine.backgroundtasks.TaskStatus.CREATED;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static org.junit.Assert.*;
 
-public class SynchronizedStateStorageTest extends AbstractEngineTest {
+public class SynchronizedStateStorageTest extends EngineTestBase {
     private SynchronizedStateStorage stateStorage;
-
-    @BeforeClass
-    public static void startEngine() throws Exception{
-        startTestEngine();
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
-    }
 
     @Before
     public void setUp() throws Exception {

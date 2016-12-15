@@ -19,7 +19,7 @@
 package ai.grakn.test.graql.reasoner;
 
 import ai.grakn.GraknGraph;
-import ai.grakn.test.AbstractEngineTest;
+import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
 import ai.grakn.graql.MatchQuery;
@@ -45,7 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
-public class AtomicTest extends AbstractEngineTest{
+public class AtomicTest extends AbstractGraknTest {
 
     private static GraknGraph snbGraph;
     private static GraknGraph cwGraph;
@@ -53,16 +53,10 @@ public class AtomicTest extends AbstractEngineTest{
     @BeforeClass
     public static void onStartup() throws Exception {
         assumeTrue(usingTinker());
-        startTestEngine();
         snbGraph = SNBGraph.getGraph();
         cwGraph = CWGraph.getGraph();
         Reasoner.linkConceptTypes(snbGraph);
         Reasoner.linkConceptTypes(cwGraph);
-    }
-
-    @AfterClass
-    public static void stopEngine() throws Exception {
-        stopTestEngine();
     }
 
     @org.junit.Rule
