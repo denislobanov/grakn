@@ -78,6 +78,7 @@ public class TasksController {
         try {
             Class cl = Class.forName(mgr);
             taskManager = (TaskManager) cl.getMethod("getInstance").invoke(null);
+            taskManager.open();
         }
         catch(ClassNotFoundException|IllegalAccessException|NoSuchMethodException|InvocationTargetException e) {
             LOG.error("Could not start TasksController due to exception (possibly bad configuration) - "+ getFullStackTrace(e));

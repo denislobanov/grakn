@@ -82,7 +82,12 @@ public class StandaloneTaskManager implements TaskManager {
         return instance;
     }
 
-    public void shutdown(){
+    public TaskManager open() {
+        return this;
+    }
+
+    @Override
+    public void close(){
         executorService.shutdown();
         schedulingService.shutdown();
         instance = null;
