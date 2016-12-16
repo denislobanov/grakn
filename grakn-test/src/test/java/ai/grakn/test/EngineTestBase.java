@@ -89,9 +89,9 @@ public class EngineTestBase {
         if(ENGINE_ON.compareAndSet(true, false)) {
             System.out.println("STOPPING ENGINE...");
 
-            stopGraph();
             GraknEngineServer.stopCluster();
             kafkaUnit.shutdown();
+            stopGraph();
 
             sleep(5000);
             FileUtils.deleteDirectory(tempDirectory.toFile());
