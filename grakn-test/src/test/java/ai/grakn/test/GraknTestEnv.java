@@ -61,8 +61,8 @@ public interface GraknTestEnv {
 
             // Drop the system keyspaces too, and re-create it for the next run.
             systemGraph.clear();
-            String config = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
-            new SystemKeyspace(null, config).loadSystemOntology();
+            //String config = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
+            new SystemKeyspace(null, ConfigProperties.getInstance().getProperties()).loadSystemOntology();
 
             GraknEngineServer.stopHTTP();
         }
