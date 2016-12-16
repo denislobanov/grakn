@@ -22,6 +22,7 @@ import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.util.ExceptionWrapper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.TreeCache;
@@ -32,32 +33,60 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONArray;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaProducer;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.*;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
-public class TaskFailover implements TreeCacheListener {
+public class TaskFailover implements TreeCacheListener, AutoCloseable {
+    private final KafkaLogger LOG = KafkaLogger.getInstance();
+    private final AtomicBoolean OPENED = new AtomicBoolean(false);
+
     private Map<String, ChildData> current;
     private TreeCache cache;
     private KafkaProducer<String, String> producer;
     private StateStorage stateStorage;
     private SynchronizedStateStorage synchronizedStateStorage;
-    private final KafkaLogger LOG = KafkaLogger.getInstance();
 
-    //FIXME: do not instantiate in constructor, add separate method
-    //FIXME: add close!
-    TaskFailover(CuratorFramework client, TreeCache cache) throws Exception {
+    TaskFailover(TreeCache cache) {
         this.cache = cache;
-        current = cache.getCurrentChildren(RUNNERS_WATCH);
-
-        producer = kafkaProducer();
-        stateStorage = new GraknStateStorage();
-        synchronizedStateStorage = SynchronizedStateStorage.getInstance();
-        scanStaleStates(client);
     }
+
+    public TaskFailover open(CuratorFramework client) throws Exception {
+        if(OPENED.compareAndSet(false, true)) {
+            current = cache.getCurrentChildren(RUNNERS_WATCH);
+            producer = kafkaProducer();
+
+            stateStorage = new GraknStateStorage();
+            synchronizedStateStorage = SynchronizedStateStorage.getInstance();
+
+            scanStaleStates(client);
+        }
+        else {
+            LOG.error("TaskFailover already opened!");
+        }
+
+        return this;
+    }
+
+    @Override
+    public void close() {
+        if(OPENED.compareAndSet(false, true)) {
+            noThrow(producer::flush, "Could not flush Kafka Producer.");
+            noThrow(producer::close, "Could not close Kafka Producer.");
+
+            current = null;
+            stateStorage = null;
+        }
+        else {
+            LOG.error("TaskFailover close() called before open().");
+        }
+    }
+
 
     public void childEvent(CuratorFramework client, TreeCacheEvent event) throws Exception {
         Map<String, ChildData> nodes = cache.getCurrentChildren(RUNNERS_WATCH);

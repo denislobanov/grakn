@@ -23,6 +23,9 @@ import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
 import ai.grakn.engine.backgroundtasks.distributed.Scheduler;
+import ai.grakn.engine.backgroundtasks.distributed.TaskRunner;
+import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
+import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.factory.GraphFactory;
@@ -61,17 +64,11 @@ public class EngineTestBase {
         if(ENGINE_ON.compareAndSet(false, true)) {
             System.out.println("STARTING ENGINE...");
 
-            try {
-                hideLogs();
-                startEngine();
-                RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
+            hideLogs();
+            startEngine();
+            RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
 
-                System.out.println("STARTED ENGINE.");
-            }
-            catch (Exception e) {
-                System.err.println(ExceptionUtils.getFullStackTrace(e));
-                throw e;
-            }
+            System.out.println("STARTED ENGINE.");
         }
     }
 
@@ -94,19 +91,14 @@ public class EngineTestBase {
         if(ENGINE_ON.compareAndSet(true, false)) {
             System.out.println("STOPPING ENGINE...");
 
-            try {
-                stopGraph();
-                GraknEngineServer.stopCluster();
-                kafkaUnit.shutdown();
+            stopGraph();
+            GraknEngineServer.stopCluster();
+            kafkaUnit.shutdown();
 
-                sleep(5000);
-                FileUtils.deleteDirectory(tempDirectory.toFile());
+            sleep(5000);
+            FileUtils.deleteDirectory(tempDirectory.toFile());
 
-                System.out.println("ENGINE STOPPED.");
-            }
-            catch (Throwable t) {
-                throw new Exception(t);
-            }
+            System.out.println("ENGINE STOPPED.");
         }
     }
 
@@ -115,10 +107,10 @@ public class EngineTestBase {
         logger.setLevel(Level.OFF);
         org.apache.log4j.Logger.getRootLogger().setLevel(org.apache.log4j.Level.ERROR);
 
-//        ((Logger) org.slf4j.LoggerFactory.getLogger(SynchronizedStateStorage.class)).setLevel(Level.DEBUG);
-//        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
-//        ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
-//        ((Logger) org.slf4j.LoggerFactory.getLogger(GraknStateStorage.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(SynchronizedStateStorage.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
+        ((Logger) org.slf4j.LoggerFactory.getLogger(GraknStateStorage.class)).setLevel(Level.DEBUG);
     }
 
     protected String getPath(String file) {

@@ -25,6 +25,7 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.util.ExceptionWrapper;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
@@ -33,35 +34,23 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 /**
  * Class to manage tasks distributed using Kafka.
  */
 public class DistributedTaskManager implements TaskManager, AutoCloseable {
 	private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
+	private final AtomicBoolean OPENED = new AtomicBoolean(false);
+    private static DistributedTaskManager instance = null;
+
     private KafkaProducer producer;
     private StateStorage stateStorage;
     private SynchronizedStateStorage zkStorage;
-    private static DistributedTaskManager instance = null;
-
-    /**
-     * Instantiate connection with Zookeeper. Create Kafka producer. Start TaskRunner. Attempt to start Scheduler.
-     */
-    private DistributedTaskManager() {
-        try {
-            producer = ConfigHelper.kafkaProducer();
-            stateStorage = new GraknStateStorage();
-            zkStorage = SynchronizedStateStorage.getInstance();
-        }
-        catch (Exception e) {
-        	e.printStackTrace(System.err);
-        	LOG.error("While trying to start the DistributedTaskManager", e); 
-            throw new RuntimeException("Could not start task manager : "+e);
-        }
-    }
 
     public static synchronized DistributedTaskManager getInstance() {
         if(instance == null)
@@ -69,10 +58,37 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
         return instance;
     }
 
+    public DistributedTaskManager open() {
+        if(OPENED.compareAndSet(false, true)) {
+            try {
+                producer = ConfigHelper.kafkaProducer();
+                stateStorage = new GraknStateStorage();
+                zkStorage = SynchronizedStateStorage.getInstance();
+            }
+            catch (Exception e) {
+                e.printStackTrace(System.err);
+                LOG.error("While trying to start the DistributedTaskManager", e);
+                throw new RuntimeException("Could not start task manager : "+e);
+            }
+        }
+        else {
+            LOG.error("DistributedTaskManager open() called multiple times!");
+        }
+
+        return this;
+    }
+
     @Override
     public void close() {
-        producer.close();
-        instance = null;
+        if(OPENED.compareAndSet(true, false)) {
+            noThrow(producer::close, "Could not close Kafka Producer.");
+            producer = null;
+            stateStorage = null;
+            zkStorage = null;
+        }
+        else {
+            LOG.error("DistributedTaskManager close() called before open()!");
+        }
     }
 
     @Override
