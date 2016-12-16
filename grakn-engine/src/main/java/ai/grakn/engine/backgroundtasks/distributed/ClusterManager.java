@@ -68,11 +68,10 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
             CountDownLatch countDownLatch = new CountDownLatch(1);
 
             // Call close() in case there is an exception during open().
-            try(TaskRunner r = new TaskRunner(countDownLatch).open()) {
-                taskRunner = r;
-                taskRunnerThread = new Thread(taskRunner);
-                taskRunnerThread.start();
-            }
+            taskRunner = new TaskRunner(countDownLatch);
+            taskRunner.open();
+            taskRunnerThread = new Thread(taskRunner);
+            taskRunnerThread.start();
 
             leaderSelector = new LeaderSelector(zookeeperStorage.connection(), SCHEDULER, this);
             leaderSelector.autoRequeue();
@@ -125,12 +124,11 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         registerFailover(client);
 
         // Call close() in case of exceptions during open()
-        try(Scheduler s = new Scheduler().open()) {
-            scheduler = s;
+        scheduler = new Scheduler();
+        scheduler.open();
 
-            LOG.info(engineID + " has taken over the scheduler.");
-            scheduler.run();
-        }
+        LOG.info(engineID + " has taken over the scheduler.");
+        scheduler.run();
     }
 
     /**

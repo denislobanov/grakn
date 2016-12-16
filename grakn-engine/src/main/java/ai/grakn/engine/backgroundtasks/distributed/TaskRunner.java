@@ -31,7 +31,6 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
-import org.apache.kafka.common.metrics.stats.Count;
 import org.apache.zookeeper.CreateMode;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -69,7 +68,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final Set<String> runningTasks = new HashSet<>();
     private final String engineID = EngineID.getInstance().id();
     private final CountDownLatch startupLatch;
-    private final AtomicBoolean opened = new AtomicBoolean(false);
+    private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private StateStorage graknStorage;
     private SynchronizedStateStorage zkStorage;
@@ -88,7 +87,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
      */
     public void run()  {
         running = true;
-
         try {
             while (running) {
                 // Poll for new tasks only when we know we have space to accept them.
@@ -113,7 +111,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     }
 
     public TaskRunner open() throws Exception {
-        if(opened.compareAndSet(false, true)) {
+        if(OPENED.compareAndSet(false, true)) {
             graknStorage = new GraknStateStorage();
 
             consumer = kafkaConsumer(TASK_RUNNER_GROUP);
@@ -140,8 +138,9 @@ public class TaskRunner implements Runnable, AutoCloseable {
     /**
      * Stop the main loop, causing run() to exit.
      */
+    @Override
     public void close() {
-        if(opened.compareAndSet(true, false)) {
+        if(OPENED.compareAndSet(true, false)) {
             noThrow(consumer::wakeup, "Could not call wakeup on Kafka Consumer.");
 
             // Wait for thread calling run() to wakeup and close consumer.
