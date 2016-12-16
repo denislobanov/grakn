@@ -161,6 +161,10 @@ public class MigrationCLI {
     }
 
     public void initiateShutdown(){
+        // DistributedTaskManager.close() is called from GraknEngineServer.stopCluster(), so we do not call it here. However
+        // when running migration in a different JVM this means that a kafka producer will be left open when we shutdown.
+        //
+        // This issue will be fixed when loader becomes a client to the REST API.
         System.out.println("Initiating shutdown...");
     }
 

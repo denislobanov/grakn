@@ -37,10 +37,7 @@ import org.json.JSONObject;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -145,7 +142,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             // Wait for thread calling run() to wakeup and close consumer.
             try {
-                waitToClose.await();
+                waitToClose.await(5*properties.getPropertyAsLong(TASKRUNNER_POLLING_FREQ), MILLISECONDS);
             } catch (Throwable t) {
                 LOG.error("Exception whilst waiting for scheduler run() thread to finish - " + getFullStackTrace(t));
             }

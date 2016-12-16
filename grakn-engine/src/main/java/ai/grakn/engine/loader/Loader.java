@@ -174,8 +174,6 @@ public class Loader {
                 e.printStackTrace();
             }
         }
-
-        manager.close();
     }
 
     /**
@@ -197,8 +195,6 @@ public class Loader {
                 e.printStackTrace();
             }
         }
-
-        manager.close();
     }
 
     /**

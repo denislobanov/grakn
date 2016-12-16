@@ -59,9 +59,7 @@ public class TasksControllerTest extends EngineTestBase {
     public void setUp() throws Exception {
         assumeFalse(usingTinker());
         DistributedTaskManager manager = DistributedTaskManager.getInstance();
-        manager.open();
         singleTask = manager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
-        manager.close();
 
         // Stopping tasks is not currently supported by the DistributedTaskManager.
 //        singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
