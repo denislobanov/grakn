@@ -101,6 +101,8 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
         zookeeperStorage.close();
         executor.shutdown();
+
+        //FIXME: stop logger
         LOG.debug("Cluster Manager stopped");
     }
 
@@ -114,6 +116,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         scheduler = new Scheduler();
         LOG.info(engineID + " has taken over the scheduler");
 
+        //FIXME: remove, scheduler.run() here
         waitOnProcess(executor.submit(scheduler));
         scheduler = null;
     }

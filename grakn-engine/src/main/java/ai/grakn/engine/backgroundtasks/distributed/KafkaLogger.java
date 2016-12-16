@@ -55,6 +55,7 @@ public class KafkaLogger {
 
     private LogLevel logLevel;
 
+    //FIXME: separate producer open
     private KafkaLogger() {
         producer = ConfigHelper.kafkaProducer();
         logLevel = LogLevel.valueOf(ConfigProperties.getInstance().getProperty(ConfigProperties.LOGGING_LEVEL));
@@ -67,7 +68,8 @@ public class KafkaLogger {
         return instance;
     }
 
-    public void finalize() {
+    //FIXME: call from custer manager
+    public void close() {
         producer.flush();
         producer.close();
     }

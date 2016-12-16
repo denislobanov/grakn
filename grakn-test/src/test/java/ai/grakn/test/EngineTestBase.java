@@ -29,9 +29,11 @@ import ai.grakn.factory.GraphFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
+import com.ctc.wstx.util.ExceptionUtil;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.LoggerFactory;
@@ -67,7 +69,8 @@ public class EngineTestBase {
                 System.out.println("STARTED ENGINE.");
             }
             catch (Exception e) {
-                throw new Exception(e);
+                System.err.println(ExceptionUtils.getFullStackTrace(e));
+                throw e;
             }
         }
     }

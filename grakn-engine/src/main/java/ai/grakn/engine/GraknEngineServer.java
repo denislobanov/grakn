@@ -58,7 +58,6 @@ import static spark.Spark.*;
  */
 
 public class GraknEngineServer {
-
     private static ConfigProperties prop = ConfigProperties.getInstance();
     private static Logger LOG = LoggerFactory.getLogger(GraknEngineServer.class);
     private static final int WEBSOCKET_TIMEOUT = 3600000;
@@ -163,7 +162,6 @@ public class GraknEngineServer {
 
 
     private static void checkAuthorization(Request request, Response response) {
-
         if(!isPasswordProtected) return;
 
         //we dont check authorization token if the path requested is one of the unauthenticated ones

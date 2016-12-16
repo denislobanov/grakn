@@ -47,6 +47,8 @@ public class TaskFailover implements TreeCacheListener {
     private SynchronizedStateStorage synchronizedStateStorage;
     private final KafkaLogger LOG = KafkaLogger.getInstance();
 
+    //FIXME: do not instantiate in constructor, add separate method
+    //FIXME: add close!
     TaskFailover(CuratorFramework client, TreeCache cache) throws Exception {
         this.cache = cache;
         current = cache.getCurrentChildren(RUNNERS_WATCH);
