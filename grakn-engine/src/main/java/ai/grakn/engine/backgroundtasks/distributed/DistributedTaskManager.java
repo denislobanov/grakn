@@ -43,7 +43,7 @@ import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 /**
  * Class to manage tasks distributed using Kafka.
  */
-public class DistributedTaskManager implements TaskManager, AutoCloseable {
+public class DistributedTaskManager implements TaskManager{
 	private final Logger LOG = LoggerFactory.getLogger(DistributedTaskManager.class);
 	private final AtomicBoolean OPENED = new AtomicBoolean(false);
     private static DistributedTaskManager instance = null;
@@ -58,7 +58,7 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
         return instance;
     }
 
-    public DistributedTaskManager open() {
+    public TaskManager open() {
         if(OPENED.compareAndSet(false, true)) {
             try {
                 producer = ConfigHelper.kafkaProducer();
