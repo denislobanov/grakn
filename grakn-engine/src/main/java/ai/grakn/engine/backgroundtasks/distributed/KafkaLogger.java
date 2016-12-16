@@ -29,8 +29,10 @@ import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.LOG_TOPIC;
 
 public class KafkaLogger {
     private final static Logger LOG = LoggerFactory.getLogger(KafkaLogger.class);
+    private final LogLevel logLevel;
     private static KafkaLogger instance = null;
-    private final KafkaProducer<String, String> producer;
+    private KafkaProducer<String, String> producer;
+
     private enum LogLevel {
         DEBUG("DEBUG", 0),
         INFO("INFO", 1),
@@ -53,25 +55,11 @@ public class KafkaLogger {
         }
     }
 
-    private LogLevel logLevel;
-
-    //FIXME: separate producer open
-    private KafkaLogger() {
-        producer = ConfigHelper.kafkaProducer();
-        logLevel = LogLevel.valueOf(ConfigProperties.getInstance().getProperty(ConfigProperties.LOGGING_LEVEL));
-    }
-
     public static synchronized KafkaLogger getInstance() {
         if(instance == null)
             instance = new KafkaLogger();
 
         return instance;
-    }
-
-    //FIXME: call from custer manager
-    public void close() {
-        producer.flush();
-        producer.close();
     }
 
     public void debug(String msg) {
@@ -96,6 +84,19 @@ public class KafkaLogger {
         if(logLevel.level() <= LogLevel.ERROR.level())
         sendMsg(LogLevel.ERROR.toString(), Thread.currentThread().getStackTrace()[2].toString(), msg);
         LOG.error(msg);
+    }
+
+    void open() {
+        producer = ConfigHelper.kafkaProducer();
+    }
+
+    void close() {
+        producer.flush();
+        producer.close();
+    }
+
+    private KafkaLogger() {
+        logLevel = LogLevel.valueOf(ConfigProperties.getInstance().getProperty(ConfigProperties.LOGGING_LEVEL));
     }
 
     private void sendMsg(String level, String caller, String msg) {

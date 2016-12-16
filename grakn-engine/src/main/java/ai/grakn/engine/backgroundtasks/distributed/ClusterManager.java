@@ -20,6 +20,7 @@ package ai.grakn.engine.backgroundtasks.distributed;
 
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.EngineID;
+import ai.grakn.engine.util.ExceptionWrapper;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.leader.LeaderSelector;
@@ -28,6 +29,7 @@ import org.apache.curator.framework.recipes.leader.LeaderSelectorListenerAdapter
 import java.util.concurrent.*;
 
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.*;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
@@ -40,10 +42,10 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     private final String engineID;
 
     private LeaderSelector leaderSelector;
-    private ExecutorService executor;
     private Scheduler scheduler;
     private TreeCache cache;
     private TaskRunner taskRunner;
+    private Thread taskRunnerThread;
     private SynchronizedStateStorage zookeeperStorage;
 
     public static synchronized ClusterManager getInstance() {
@@ -58,15 +60,19 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     }
 
     public void start() {
-        LOG.debug("Starting Cluster manager, called by "+Thread.currentThread().getStackTrace()[1]);
-        executor = Executors.newFixedThreadPool(2);
-
         try {
-            zookeeperStorage = SynchronizedStateStorage.getInstance();
+            LOG.open();
+            LOG.debug("Starting Cluster manager, called by "+Thread.currentThread().getStackTrace()[1]);
 
+            zookeeperStorage = SynchronizedStateStorage.getInstance();
             CountDownLatch countDownLatch = new CountDownLatch(1);
-            taskRunner = new TaskRunner(countDownLatch);
-            executor.submit(taskRunner);
+
+            // Call close() in case there is an exception during open().
+            try(TaskRunner r = new TaskRunner(countDownLatch).open()) {
+                taskRunner = r;
+                taskRunnerThread = new Thread(taskRunner);
+                taskRunnerThread.start();
+            }
 
             leaderSelector = new LeaderSelector(zookeeperStorage.connection(), SCHEDULER, this);
             leaderSelector.autoRequeue();
@@ -78,7 +84,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
                 Thread.sleep(1000);
             }
 
-            // Wait for TaskRunner to start
+            // Wait for TaskRunner to start.
             countDownLatch.await();
         }
         catch (Exception e) {
@@ -86,24 +92,29 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
             throw new RuntimeException(e);
         }
 
-        LOG.debug("Leader has been elected");
+        LOG.debug("ClusterManager started, a leader has been elected.");
     }
 
     public void stop() {
-        leaderSelector.interruptLeadership();
-        leaderSelector.close();
+        noThrow(leaderSelector::interruptLeadership, "Could not interrupt leadership.");
+        noThrow(leaderSelector::close, "Could not close leaderSelector.");
         if(scheduler != null)
-            scheduler.close();
+            noThrow(scheduler::close, "Could not stop scheduler.");
 
         if(cache != null)
-            cache.close();
-        taskRunner.close();
+            noThrow(cache::close, "Could not close ZK Tree Cache.");
 
-        zookeeperStorage.close();
-        executor.shutdown();
+        noThrow(taskRunner::close, "Could not stop TaskRunner.");
 
-        //FIXME: stop logger
-        LOG.debug("Cluster Manager stopped");
+        // Lambdas cant throw exceptions
+        try {
+            taskRunnerThread.join();
+        } catch(Throwable t) {
+            LOG.error("Exception whilst waiting for TaskRunner thread to join - "+getFullStackTrace(t));
+        }
+
+        noThrow(zookeeperStorage::close, "Could not close ZK storage.");
+        noThrow(LOG::close, "Could not close KafkaLogger");
     }
 
     /**
@@ -113,12 +124,13 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     public void takeLeadership(CuratorFramework client) throws Exception {
         registerFailover(client);
 
-        scheduler = new Scheduler();
-        LOG.info(engineID + " has taken over the scheduler");
+        // Call close() in case of exceptions during open()
+        try(Scheduler s = new Scheduler().open()) {
+            scheduler = s;
 
-        //FIXME: remove, scheduler.run() here
-        waitOnProcess(executor.submit(scheduler));
-        scheduler = null;
+            LOG.info(engineID + " has taken over the scheduler.");
+            scheduler.run();
+        }
     }
 
     /**
@@ -129,27 +141,12 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
         return scheduler;
     }
 
-    //TODO Also wait on register failover
-    /**
-     * Wait for the scheduler to finish
-     * @param future future to wait on
-     */
-    private void waitOnProcess(Future future) {
-        try {
-            future.get();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            LOG.error("Scheduler has died " + getFullStackTrace(e));
-            Thread.currentThread().interrupt();
-        }
-        finally {
-            leaderSelector.interruptLeadership();
-        }
-    }
-
     private void registerFailover(CuratorFramework client) throws Exception {
         cache = new TreeCache(client, RUNNERS_WATCH);
-        cache.getListenable().addListener(new TaskFailover(client, cache));
+        try(TaskFailover failover = new TaskFailover(cache).open(client)) {
+            cache.getListenable().addListener(failover);
+        }
+
         cache.start();
     }
 }

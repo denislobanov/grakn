@@ -31,6 +31,7 @@ import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.apache.kafka.common.metrics.stats.Count;
 import org.apache.zookeeper.CreateMode;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -41,6 +42,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
@@ -53,6 +55,7 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STAT
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
 
 import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
@@ -65,36 +68,29 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final Integer allowableRunningTasks;
     private final Set<String> runningTasks = new HashSet<>();
     private final String engineID = EngineID.getInstance().id();
-    private final CountDownLatch countDownLatch;
+    private final CountDownLatch startupLatch;
+    private final AtomicBoolean opened = new AtomicBoolean(false);
 
     private StateStorage graknStorage;
     private SynchronizedStateStorage zkStorage;
     private KafkaConsumer<String, String> consumer;
+    private volatile boolean running;
+    private CountDownLatch waitToClose;
 
-    TaskRunner(CountDownLatch countDownLatch) {
+    TaskRunner(CountDownLatch startupLatch) {
         allowableRunningTasks = properties.getAvailableThreads();
-        graknStorage = new GraknStateStorage();
-        this.countDownLatch = countDownLatch;
+        this.startupLatch = startupLatch;
+        running = false;
     }
 
     /**
      * Start the main loop, this will block until a call to stop().
      */
     public void run()  {
+        running = true;
+
         try {
-            zkStorage = SynchronizedStateStorage.getInstance();
-            consumer = kafkaConsumer(TASK_RUNNER_GROUP);
-            consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), new RebalanceListener(consumer));
-
-            // Create initial entries in ZK for TaskFailover to watch.
-            registerAsRunning();
-            updateOwnState();
-            executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
-
-            countDownLatch.countDown();
-
-            //FIXME: volatile running
-            while (true) {
+            while (running) {
                 // Poll for new tasks only when we know we have space to accept them.
                 if (getRunningTasksCount() < allowableRunningTasks) {
                     ConsumerRecords<String, String> records = consumer.poll(properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ));
@@ -109,24 +105,65 @@ public class TaskRunner implements Runnable, AutoCloseable {
             LOG.debug(getFullStackTrace(e));
             Thread.currentThread().interrupt();
         }
-        catch (Exception e) {
-            LOG.error("Could not start TaskRunner - "+getFullStackTrace(e));
-        } finally {
+        finally {
             consumer.commitSync();
             consumer.close();
+            waitToClose.countDown();
         }
+    }
+
+    public TaskRunner open() throws Exception {
+        if(opened.compareAndSet(false, true)) {
+            graknStorage = new GraknStateStorage();
+
+            consumer = kafkaConsumer(TASK_RUNNER_GROUP);
+            consumer.subscribe(singletonList(WORK_QUEUE_TOPIC), new RebalanceListener(consumer));
+
+            zkStorage = SynchronizedStateStorage.getInstance();
+
+            // Create initial entries in ZK for TaskFailover to watch.
+            registerAsRunning();
+            updateOwnState();
+            executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
+
+            waitToClose = new CountDownLatch(1);
+            startupLatch.countDown();
+            LOG.info("TaskRunner opened.");
+        }
+        else {
+            LOG.error("TaskRunner already opened!");
+        }
+
+        return this;
     }
 
     /**
      * Stop the main loop, causing run() to exit.
      */
     public void close() {
-        //FIXME wrap in try catch helper
-        consumer.wakeup();
-        //FIXME: same as above, also closes run before it can close consumer, but this is called from a different thread!
-        executor.shutdown();
+        if(opened.compareAndSet(true, false)) {
+            noThrow(consumer::wakeup, "Could not call wakeup on Kafka Consumer.");
 
-        LOG.debug("TaskRunner stopped");
+            // Wait for thread calling run() to wakeup and close consumer.
+            try {
+                waitToClose.await();
+            } catch (Throwable t) {
+                LOG.error("Exception whilst waiting for scheduler run() thread to finish - " + getFullStackTrace(t));
+            }
+
+            // Interrupt all currently running threads - these will be re-allocated to another Engine.
+            noThrow(executor::shutdownNow, "Could shutdown executor pool.");
+
+            graknStorage = null;
+
+            // Closed by ClusterManager
+            zkStorage = null;
+
+            LOG.debug("TaskRunner stopped");
+        }
+        else {
+            LOG.error("TaskRunner close() called before open()!");
+        }
     }
 
     private void processRecords(ConsumerRecords<String, String> records) {

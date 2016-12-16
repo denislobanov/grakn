@@ -58,6 +58,7 @@ public class TasksControllerTest extends EngineTestBase {
     @Before
     public void setUp() throws Exception {
         assumeFalse(usingTinker());
+        // Opened and closed by GraknEngineServer.startCluster()
         TaskManager taskManager = DistributedTaskManager.getInstance();
         singleTask = taskManager.scheduleTask(new TestTask(), this.getClass().getName(), new Date(), 0, new JSONObject());
 
