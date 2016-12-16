@@ -117,6 +117,7 @@ public class GraknEngineServer {
         ClusterManager.getInstance().start();
 
         // Submit a recurring post processing task
+        //FIXME: other things open and close this too
         DistributedTaskManager manager = DistributedTaskManager.getInstance();
         manager.open();
         manager.scheduleTask(new PostProcessingTask(),

@@ -283,7 +283,7 @@ public class GraknStateStorage implements StateStorage {
         double sleepFor = 100;
         for (int i = 0; i < retries; i++) {
 
-            LOG.debug("Attempting commit " + i + " on system graph");
+            LOG.debug("Attempting commit " + i + " on system graph @ t"+Thread.currentThread().getId());
             long time = System.currentTimeMillis();
 
             try (GraknGraph graph = GraphFactory.getInstance().getGraph(SYSTEM_GRAPH_NAME)) {
@@ -303,7 +303,7 @@ public class GraknStateStorage implements StateStorage {
                     LOG.error(getFullStackTrace(e));
                 }
             } finally {
-                LOG.debug("Took " + (System.currentTimeMillis() - time) + " to commit to system graph");
+                LOG.debug("Took " + (System.currentTimeMillis() - time) + " to commit to system graph @ t" + Thread.currentThread().getId());
             }
 
             // Sleep
