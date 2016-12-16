@@ -47,32 +47,25 @@ public interface GraknTestEnv {
     }
 
     static void stopGraph() throws Exception {
-        // Plan B
-        GraknGraph systemGraph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
-        systemGraph.graql().match(var("x").isa("keyspace"))
-                .execute()
-                .forEach(x -> x.values().forEach(y -> {
-                    String name = y.asResource().getValue().toString();
-                    GraknGraph graph = GraphFactory.getInstance().getGraph(name);
-                    graph.clear();
-                    System.out.println("Cleared " + name);
-                }));
+        if(ENGINE_RUNNING.compareAndSet(true, false)) {
+            // Drop all keyspaces
+            GraknGraph systemGraph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
+            systemGraph.graql().match(var("x").isa("keyspace-name"))
+                    .execute()
+                    .forEach(x -> x.values().forEach(y -> {
+                        String name = y.asResource().getValue().toString();
+                        GraknGraph graph = GraphFactory.getInstance().getGraph(name);
+                        graph.clear();
+                        System.out.println("Cleared " + name);
+                    }));
 
-        systemGraph.clear();
+            // Drop the system keyspaces too, and re-create it for the next run.
+            systemGraph.clear();
+            String config = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
+            new SystemKeyspace(null, config).loadSystemOntology();
 
-        if(ENGINE_RUNNING.compareAndSet(true, false))
             GraknEngineServer.stopHTTP();
-
-        // Plan A
-//        if (usingTitan()) {
-//            Thread.sleep(5000);
-//            clearEmbeddedCassandra();
-//            Thread.sleep(5000);
-//
-//            // Restore base graphs
-//            String config = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
-//            new SystemKeyspace(null, config).loadSystemOntology();
-//        }
+        }
     }
 
     static GraknGraphFactory factoryWithNewKeyspace() {
@@ -94,17 +87,6 @@ public interface GraknTestEnv {
 
             //noinspection unchecked
             cl.getMethod("startEmbeddedCassandra", String.class).invoke(null, "cassandra-embedded.yaml");
-            hideLogs();
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    static void clearEmbeddedCassandra() {
-        try {
-            Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
-            cl.getMethod("cleanEmbeddedCassandra").invoke(null);
             hideLogs();
         }
         catch (Exception e) {
