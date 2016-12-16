@@ -141,7 +141,7 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
     private void registerFailover(CuratorFramework client) throws Exception {
         cache = new TreeCache(client, RUNNERS_WATCH);
-        try(TaskFailover failover = new TaskFailover(cache).open(client)) {
+        try(TaskFailover failover = TaskFailover.getInstance().open(client, cache)) {
             cache.getListenable().addListener(failover);
         }
 
