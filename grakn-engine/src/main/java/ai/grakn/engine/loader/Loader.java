@@ -184,6 +184,12 @@ public class Loader {
         while ((new Date().getTime())-initial < timeout) {
             if(allTasksFinished(currentTasks))
                 break;
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         manager.close();
