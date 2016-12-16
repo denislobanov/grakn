@@ -42,6 +42,8 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.*;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 
 public class TaskFailover implements TreeCacheListener, AutoCloseable {
+    private static TaskFailover instance = null;
+
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
@@ -51,12 +53,16 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
     private StateStorage stateStorage;
     private SynchronizedStateStorage synchronizedStateStorage;
 
-    TaskFailover(TreeCache cache) {
-        this.cache = cache;
+    public static synchronized TaskFailover getInstance() {
+        if(instance == null)
+            instance = new TaskFailover();
+
+        return instance;
     }
 
-    public TaskFailover open(CuratorFramework client) throws Exception {
+    public TaskFailover open(CuratorFramework client, TreeCache cache) throws Exception {
         if(OPENED.compareAndSet(false, true)) {
+            this.cache = cache;
             current = cache.getCurrentChildren(RUNNERS_WATCH);
             producer = kafkaProducer();
 

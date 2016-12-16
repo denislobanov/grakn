@@ -82,7 +82,6 @@ public class DistributedTaskManager implements TaskManager, AutoCloseable {
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
             noThrow(producer::close, "Could not close Kafka Producer.");
-            producer = null;
             stateStorage = null;
             zkStorage = null;
         }
