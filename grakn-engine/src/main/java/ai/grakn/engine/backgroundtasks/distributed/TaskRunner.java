@@ -208,8 +208,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
                 executor.submit(() -> executeTask(id, configuration));
             }
             catch (RejectedExecutionException | NullPointerException e) {
-                LOG.error(getFullStackTrace(e));
                 removeRunningTask(id);
+                LOG.error(getFullStackTrace(e));
             }
 
             // Advance offset
