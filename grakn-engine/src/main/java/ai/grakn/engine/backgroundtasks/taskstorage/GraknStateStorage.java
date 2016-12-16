@@ -308,7 +308,7 @@ public class GraknStateStorage implements StateStorage {
                     LOG.error(getFullStackTrace(e));
                 }
             } finally {
-                LOG.debug("Took " + (System.currentTimeMillis() - time) + " to commit to system graph @ t" + Thread.currentThread().getId());
+                LOG.debug("Took " + (System.currentTimeMillis() - time) + " to " + (commit ? "commit" : "query") + " to system graph @ t" + Thread.currentThread().getId());
             }
 
             // Sleep
