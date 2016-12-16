@@ -3,6 +3,8 @@ package ai.grakn.test;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.factory.SystemKeyspace;
 import org.slf4j.LoggerFactory;
 
 import ai.grakn.Grakn;
@@ -43,6 +45,10 @@ public interface GraknTestEnv {
 
         if (usingTitan()) {
             clearEmbeddedCassandra();
+
+            // Restore base graphs
+            String config = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
+            new SystemKeyspace(null, config).loadSystemOntology();
         }
     }
 
