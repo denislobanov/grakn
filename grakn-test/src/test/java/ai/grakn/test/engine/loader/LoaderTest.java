@@ -52,13 +52,14 @@ public class LoaderTest extends AbstractGraphTest {
 
     @BeforeClass
     public static void startup() throws Exception {
-        EngineTestBase.startTestEngine();
         ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(GraknStateStorage.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Loader.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(Scheduler.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(TaskRunner.class)).setLevel(Level.DEBUG);
         ((Logger) org.slf4j.LoggerFactory.getLogger(ClusterManager.class)).setLevel(Level.DEBUG);
+
+        EngineTestBase.startTestEngine();
     }
 
     @AfterClass
