@@ -93,6 +93,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
             countDownLatch.countDown();
 
+            //FIXME: volatile running
             while (true) {
                 // Poll for new tasks only when we know we have space to accept them.
                 if (getRunningTasksCount() < allowableRunningTasks) {
@@ -113,7 +114,6 @@ public class TaskRunner implements Runnable, AutoCloseable {
         } finally {
             consumer.commitSync();
             consumer.close();
-            consumer = null;
         }
     }
 
@@ -121,11 +121,10 @@ public class TaskRunner implements Runnable, AutoCloseable {
      * Stop the main loop, causing run() to exit.
      */
     public void close() {
+        //FIXME wrap in try catch helper
         consumer.wakeup();
+        //FIXME: same as above, also closes run before it can close consumer, but this is called from a different thread!
         executor.shutdown();
-
-        if(consumer != null)
-            consumer.close();
 
         LOG.debug("TaskRunner stopped");
     }

@@ -60,6 +60,7 @@ public class Scheduler implements Runnable, AutoCloseable {
     private final static ConfigProperties properties = ConfigProperties.getInstance();
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private boolean initialised = false;
+    private volatile boolean running = false;
 
     private GraknStateStorage stateStorage;
     private SynchronizedStateStorage zkStorage;
@@ -85,13 +86,14 @@ public class Scheduler implements Runnable, AutoCloseable {
     }
 
     public void run() {
+        running = true;
         schedulingService = Executors.newScheduledThreadPool(1);
 
         // restart any recurring tasks in the graph
         restartRecurringTasks();
 
         try {
-            while (true) {
+            while (running) {
                 printInitialization();
                 LOG.debug("Scheduler polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(NEW_TASKS_TOPIC).stream().map(i -> new TopicPartition(NEW_TASKS_TOPIC, i.partition())).collect(toSet())));
 
@@ -116,18 +118,36 @@ public class Scheduler implements Runnable, AutoCloseable {
         finally {
             consumer.commitSync();
             consumer.close();
-            consumer = null;
         }
     }
 
     public void close() {
-        consumer.wakeup();
-        schedulingService.shutdown();
-        if(consumer != null)
-            consumer.close();
+        running = false;
 
-        producer.flush();
-        producer.close();
+        try {
+            consumer.wakeup();
+        } catch (Throwable t) {
+            LOG.error("Could not wake up scheduler thread - "+getFullStackTrace(t));
+        }
+
+        try {
+            schedulingService.shutdown();
+        } catch(Throwable t) {
+            LOG.error("Could not shutdown scheduling service - "+getFullStackTrace(t));
+        }
+
+        try {
+            producer.flush();
+        } catch(Throwable t) {
+            LOG.error("Could not flush Kafka producer in scheduler - "+getFullStackTrace(t));
+        }
+
+        try {
+            producer.close();
+        } catch(Throwable t) {
+            LOG.error("Could not close Kafka producer in scheduler - "+getFullStackTrace(t));
+        }
+
         LOG.debug("Scheduler stopped.");
     }
 
