@@ -144,7 +144,7 @@ public class Scheduler implements Runnable, AutoCloseable {
 
             // Wait for thread calling run() to wakeup and close consumer.
             try {
-                waitToClose.await();
+                waitToClose.await(5*properties.getPropertyAsLong(SCHEDULER_POLLING_FREQ), MILLISECONDS);
             } catch (Throwable t) {
                 LOG.error("Exception whilst waiting for scheduler run() thread to finish - " + getFullStackTrace(t));
             }

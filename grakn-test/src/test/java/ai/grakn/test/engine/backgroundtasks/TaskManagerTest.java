@@ -44,13 +44,8 @@ public class TaskManagerTest extends EngineTestBase {
     @Before
     public void setup() throws Exception {
         assumeFalse(usingTinker());
-        manager = DistributedTaskManager.getInstance().open();
+        manager = DistributedTaskManager.getInstance();
         Thread.sleep(5000);
-    }
-
-    @After
-    public void tearDown() {
-        manager.close();
     }
 
     private void waitToFinish(String id) {

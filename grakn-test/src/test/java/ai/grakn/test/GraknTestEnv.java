@@ -29,7 +29,7 @@ import static ai.grakn.graql.Graql.var;
 public interface GraknTestEnv {
     static final String CONFIG = System.getProperty("grakn.test-profile");
     static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
-    static AtomicBoolean ENGINE_RUNNING = new AtomicBoolean(false);
+    static AtomicBoolean HTTP_RUNNING = new AtomicBoolean(false);
 
     static void hideLogs() {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -42,12 +42,12 @@ public interface GraknTestEnv {
             System.out.println("CASSANDRA RUNNING.");
         }
 
-        if(ENGINE_RUNNING.compareAndSet(false, true))
+        if(HTTP_RUNNING.compareAndSet(false, true))
             GraknEngineServer.startHTTP();
     }
 
     static void stopGraph() throws Exception {
-        if(ENGINE_RUNNING.compareAndSet(true, false)) {
+        if(HTTP_RUNNING.compareAndSet(true, false)) {
             // Drop all keyspaces
             GraknGraph systemGraph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
             systemGraph.graql().match(var("x").isa("keyspace-name"))
