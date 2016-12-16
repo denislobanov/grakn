@@ -167,6 +167,12 @@ public class Loader {
         while (true) {
             if(allTasksFinished(currentTasks))
                 break;
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         manager.close();
@@ -186,7 +192,7 @@ public class Loader {
                 break;
 
             try {
-                Thread.sleep(2000);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
