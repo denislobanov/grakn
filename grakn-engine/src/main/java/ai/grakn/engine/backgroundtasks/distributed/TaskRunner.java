@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
@@ -54,6 +55,7 @@ import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 public class TaskRunner implements Runnable, AutoCloseable {
@@ -72,6 +74,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private KafkaConsumer<String, String> consumer;
     private volatile boolean running;
     private CountDownLatch waitToClose;
+    private boolean initialised = false;
 
     TaskRunner(CountDownLatch startupLatch) {
         allowableRunningTasks = properties.getAvailableThreads();
@@ -86,6 +89,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
         running = true;
         try {
             while (running) {
+                printInitialization();
+                LOG.debug("TaskRunner polling, size of new tasks " + consumer.endOffsets(consumer.partitionsFor(WORK_QUEUE_TOPIC).stream().map(i -> new TopicPartition(WORK_QUEUE_TOPIC, i.partition())).collect(toSet())));
                 // Poll for new tasks only when we know we have space to accept them.
                 if (getRunningTasksCount() < allowableRunningTasks) {
                     ConsumerRecords<String, String> records = consumer.poll(properties.getPropertyAsInt(TASKRUNNER_POLLING_FREQ));
@@ -203,8 +208,8 @@ public class TaskRunner implements Runnable, AutoCloseable {
                 executor.submit(() -> executeTask(id, configuration));
             }
             catch (RejectedExecutionException | NullPointerException e) {
-                LOG.error(getFullStackTrace(e));
                 removeRunningTask(id);
+                LOG.error(getFullStackTrace(e));
             }
 
             // Advance offset
@@ -365,5 +370,12 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private void seekAndCommit(TopicPartition partition, long offset) {
         consumer.seek(partition, offset);
         consumer.commitSync();
+    }
+
+    private void printInitialization() {
+        if(!initialised) {
+            initialised = true;
+            LOG.info("TaskRunner initialised");
+        }
     }
 }
