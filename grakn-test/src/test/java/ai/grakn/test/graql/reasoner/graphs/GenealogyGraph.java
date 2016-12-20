@@ -47,7 +47,7 @@ public class GenealogyGraph extends TestGraph{
     final static String ruleFile2 = "genealogy/role-genderization-rules.gql";
     final static String ruleFile3 = "genealogy/inferred-kinships.gql";
 
-    public GenealogyGraph(){
+    public GenealogyGraph() throws Exception{
         super(null, ontologyFile);
         try {
             String peopleTemplate = getResourceAsString(peopleTemplatePath);
@@ -58,14 +58,20 @@ public class GenealogyGraph extends TestGraph{
             File marriageFile = new File(marriageFilePath);
 
             // create a migrator with your macro
-            Migrator personMigrator = new CSVMigrator(peopleTemplate, peopleFile);
-            MigrationLoader.load(graph(), personMigrator);
+            try (Migrator personMigrator = new CSVMigrator(peopleTemplate, peopleFile)) {            
+            	personMigrator.migrate().forEach(query -> { query.withGraph(graph()).execute(); });
+            }
+            //MigrationLoader.load(graph(), personMigrator);
 
-            Migrator parentMigrator = new CSVMigrator(parentTemplate, parentFile);
-            MigrationLoader.load(graph(), parentMigrator);
+            try (Migrator parentMigrator = new CSVMigrator(parentTemplate, parentFile)) {
+            	parentMigrator.migrate().forEach(query -> { query.withGraph(graph()).execute(); });
+            }
+            //MigrationLoader.load(graph(), parentMigrator);
 
-            Migrator marriageMigrator = new CSVMigrator(marriageTemplate, marriageFile);
-            MigrationLoader.load(graph(), marriageMigrator);
+            try (Migrator marriageMigrator = new CSVMigrator(marriageTemplate, marriageFile)) {
+            	marriageMigrator.migrate().forEach(query -> { query.withGraph(graph()).execute(); });
+            }
+            //MigrationLoader.load(graph(), marriageMigrator);
         } catch (IOException e){
             throw new RuntimeException(e);
         }
