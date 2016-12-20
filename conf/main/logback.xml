@@ -48,7 +48,14 @@
         <appender-ref ref="ROLLING"/>
     </logger>
 
+<<<<<<< HEAD
     <!--ASCII TEXT-->
+=======
+    <logger name="org.apache" level="ERROR">
+        <appender-ref ref="ROLLING"/>
+    </logger>
+
+>>>>>>> Reliable and distributed running of background tasks
     <logger name="ai.grakn.engine.GraknEngineServer" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>

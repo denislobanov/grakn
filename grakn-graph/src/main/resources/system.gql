@@ -4,6 +4,7 @@ insert
 scheduled-task sub entity;
 
 # scheduled-task resources
+<<<<<<< HEAD
 status sub resource, datatype string;
 status-change-time sub resource, datatype long;
 status-change-by sub resource, datatype string;
@@ -18,13 +19,29 @@ stack-trace sub resource, datatype string;
 task-exception sub resource, datatype string;
 task-checkpoint sub resource, datatype string;
 task-configuration sub resource, datatype string;
+=======
+status isa resource-type, datatype string;
+status-change-time isa resource-type, datatype long;
+status-change-by isa resource-type, datatype string;
+task-class-name isa resource-type, datatype string;
+created-by isa resource-type, datatype string;
+engine-id isa resource-type, datatype string;
+run-at isa resource-type, datatype long;
+recurring isa resource-type, datatype boolean;
+recur-interval isa resource-type, datatype long;
+task-failure isa resource-type, datatype string;
+stack-trace isa resource-type, datatype string;
+task-exception isa resource-type, datatype string;
+task-checkpoint isa resource-type, datatype string;
+task-configuration isa resource-type, datatype string;
+>>>>>>> Reliable and distributed running of background tasks
 
 scheduled-task has-resource status,
                has-resource status-change-time,
                has-resource status-change-by,
                has-resource task-class-name,
                has-resource created-by,
-               has-resource executing-hostname,
+               has-resource engine-id,
                has-resource run-at,
                has-resource recurring,
                has-resource recur-interval,

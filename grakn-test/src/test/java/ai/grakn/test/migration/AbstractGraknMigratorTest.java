@@ -27,6 +27,7 @@ import ai.grakn.concept.ResourceType;
 import ai.grakn.concept.ResourceType.DataType;
 import ai.grakn.concept.RoleType;
 import ai.grakn.concept.Type;
+import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.exception.GraknValidationException;

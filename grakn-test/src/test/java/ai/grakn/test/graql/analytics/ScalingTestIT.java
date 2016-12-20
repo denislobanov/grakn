@@ -18,34 +18,12 @@
 
 package ai.grakn.test.graql.analytics;
 
-import ai.grakn.Grakn;
-import ai.grakn.GraknGraph;
-import ai.grakn.GraknGraphFactory;
-import ai.grakn.concept.Entity;
-import ai.grakn.concept.EntityType;
-import ai.grakn.concept.Relation;
-import ai.grakn.concept.RoleType;
-import ai.grakn.engine.loader.client.LoaderClient;
-import ai.grakn.exception.GraknValidationException;
-import ai.grakn.graql.QueryBuilderImplMock;
-import ai.grakn.graql.Var;
-import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
-import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.DegreeQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
-import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
-import ai.grakn.test.AbstractScalingTest;
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVPrinter;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import static ai.grakn.graql.Graql.insert;
+import static ai.grakn.graql.Graql.var;
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -66,12 +44,37 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static ai.grakn.graql.Graql.insert;
-import static ai.grakn.graql.Graql.var;
-import static java.lang.Math.pow;
-import static java.lang.Math.sqrt;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import ai.grakn.Grakn;
+import ai.grakn.GraknGraph;
+import ai.grakn.GraknGraphFactory;
+import ai.grakn.concept.Entity;
+import ai.grakn.concept.EntityType;
+import ai.grakn.concept.Relation;
+import ai.grakn.concept.RoleType;
+import ai.grakn.engine.loader.Loader;
+import ai.grakn.engine.loader.LoaderImpl;
+import ai.grakn.engine.loader.client.LoaderClient;
+import ai.grakn.exception.GraknValidationException;
+import ai.grakn.graql.QueryBuilderImplMock;
+import ai.grakn.graql.Var;
+import ai.grakn.graql.internal.query.ComputeQueryBuilderImplMock;
+import ai.grakn.graql.internal.query.analytics.CountQueryImplMock;
+import ai.grakn.graql.internal.query.analytics.DegreeQueryImplMock;
+import ai.grakn.graql.internal.query.analytics.MaxQueryImplMock;
+import ai.grakn.graql.internal.query.analytics.MeanQueryImplMock;
+import ai.grakn.graql.internal.query.analytics.MedianQueryImplMock;
+import ai.grakn.graql.internal.query.analytics.MinQueryImplMock;
+import ai.grakn.graql.internal.query.analytics.StdQueryImplMock;
+import ai.grakn.graql.internal.query.analytics.SumQueryImplMock;
+import ai.grakn.test.AbstractScalingTest;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 
 /**
  * These tests are used for generating a report of the performance of analytics. In order to run them on a machine use
@@ -420,10 +423,10 @@ public class ScalingTestIT extends AbstractScalingTest {
         // create the ontology
         simpleOntology(keyspace);
 
-        LoaderClient loaderClient = new LoaderClient(keyspace, Arrays.asList(HOST_NAME));
-//        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
-        loaderClient.setBatchSize(100);
+        Loader loader = new LoaderImpl(keyspace);
+//        loader.setThreadsNumber(30);
+//        loader.setPollingFrequency(1000);
+        loader.setBatchSize(100);
 
         for (int g=1; g<totalSteps+1; g++) {
             writer.println("starting step: "+g);
@@ -432,12 +435,12 @@ public class ScalingTestIT extends AbstractScalingTest {
             writer.println("start loading data");
             writer.flush();
             for (int m=1; m<nodesPerStep+1; m++) {
-                loaderClient.add(insert(var().isa("thing").has("degree", v_m)));
-                loaderClient.add(insert(var().isa("thing").has("degree", V_m)));
+                loader.add(insert(var().isa("thing").has("degree", v_m)));
+                loader.add(insert(var().isa("thing").has("degree", V_m)));
                 v_m--;
                 V_m+=2;
             }
-            loaderClient.waitToFinish();
+            loader.waitToFinish();
             writer.println("stop loading data");
             writer.println("gremlin count is: " + factory.getGraph().admin().getTinkerTraversal().count().next());
             writer.flush();
@@ -532,39 +535,37 @@ public class ScalingTestIT extends AbstractScalingTest {
 
     private void addNodes(String keyspace, int startRange, int endRange) throws GraknValidationException, InterruptedException {
         // batch in the nodes
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
-//        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
-        loaderClient.setBatchSize(100);
+        Loader loader = new LoaderImpl(keyspace);
+//        loader.setThreadsNumber(30);
+//        loader.setPollingFrequency(1000);
+        loader.setBatchSize(100);
 
         for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
             String nodeId = "node-" + nodeIndex;
-            loaderClient.add(insert(var().isa("thing").id(nodeId)));
+            loader.add(insert(var().isa("thing").id(nodeId)));
         }
 
-        loaderClient.waitToFinish();
+        loader.waitToFinish();
 
     }
 
     private void addEdgesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
         // batch in the nodes
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
-//        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
-        loaderClient.setBatchSize(100);
+        Loader loader = new LoaderImpl(keyspace);
+//        loader.setThreadsNumber(30);
+//        loader.setPollingFrequency(1000);
+        loader.setBatchSize(100);
 
         for (String supernodeId : superNodes) {
             for (int nodeIndex = startRange; nodeIndex < endRange; nodeIndex++) {
                 String nodeId = "node-" + nodeIndex;
-                loaderClient.add(insert(var().isa("related")
+                loader.add(insert(var().isa("related")
                         .rel("relation1", var().id(nodeId))
                         .rel("relation2", var().id(supernodeId))));
             }
         }
 
-        loaderClient.waitToFinish();
+        loader.waitToFinish();
     }
 
     private void simpleOntology(String keyspace) throws GraknValidationException {
@@ -598,24 +599,23 @@ public class ScalingTestIT extends AbstractScalingTest {
         }
 
         // batch in the nodes
-        LoaderClient loaderClient = new LoaderClient(keyspace,
-                Arrays.asList(HOST_NAME));
-//        loaderClient.setThreadsNumber(30);
-        loaderClient.setPollingFrequency(1000);
-        loaderClient.setBatchSize(100);
+        Loader loader = new LoaderImpl(keyspace);
+//        loader.setThreadsNumber(30);
+//        loader.setPollingFrequency(1000);
+        loader.setBatchSize(100);
 
         int startNode = 0;
         while (startNode<graphSize) {
 
             String nodeId1 = "node-" + startNode;
             String nodeId2 = "node-" + ++startNode;
-            loaderClient.add(insert(var().isa("related")
+            loader.add(insert(var().isa("related")
                     .rel("relation1", var().id(nodeId1))
                     .rel("relation2", var().id(nodeId2))));
 
             startNode++;
         }
-        loaderClient.waitToFinish();
+        loader.waitToFinish();
     }
 
     private void addNodesToSuperNodes(String keyspace, Set<String> superNodes, int startRange, int endRange) {
