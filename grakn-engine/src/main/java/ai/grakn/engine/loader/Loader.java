@@ -54,7 +54,7 @@ public interface Loader {
      * Wait for all tasks to finish for one minute.
      */
     void waitToFinish();
-    
+
     /**
      * Wait for all tasks to finish.
      * @param timeout amount of time (in ms) to wait.

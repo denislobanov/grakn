@@ -89,13 +89,7 @@ public class InMemoryStateStorage implements StateStorage {
                 state.configuration(configuration);
         }
 
-//<<<<<<< HEAD:grakn-engine/src/main/java/ai/grakn/engine/backgroundtasks/InMemoryStateStorage.java
-//        if (status == TaskStatus.COMPLETED || status == TaskStatus.FAILED) {
-//            state.configuration(new JSONObject());
-//        }
-//=======
         return true;
-//>>>>>>> Reliable and distributed running of background tasks:grakn-engine/src/main/java/ai/grakn/engine/backgroundtasks/taskstorage/InMemoryStateStorage.java
     }
 
     public TaskState getState(String id) {

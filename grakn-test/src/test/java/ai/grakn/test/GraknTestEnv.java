@@ -63,7 +63,6 @@ public interface GraknTestEnv {
             systemGraph.clear();
             //String config = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
             new SystemKeyspace(null, ConfigProperties.getInstance().getProperties()).loadSystemOntology();
-
             GraknEngineServer.stopHTTP();
         }
     }

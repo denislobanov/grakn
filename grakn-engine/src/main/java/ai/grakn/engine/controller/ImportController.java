@@ -18,7 +18,6 @@
 
 package ai.grakn.engine.controller;
 
-
 import ai.grakn.engine.loader.Loader;
 import ai.grakn.engine.loader.LoaderImpl;
 import ai.grakn.engine.loader.client.LoaderClient;

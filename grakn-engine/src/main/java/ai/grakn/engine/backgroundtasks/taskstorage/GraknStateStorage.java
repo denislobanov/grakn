@@ -32,7 +32,6 @@ import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
-import ai.grakn.util.Schema;
 import javafx.util.Pair;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -171,12 +170,8 @@ public class GraknStateStorage implements StateStorage {
 
         TaskState state = new TaskState(name.getValue().toString());
 
-////<<<<<<< HEAD:grakn-engine/src/main/java/ai/grakn/engine/backgroundtasks/GraknStateStorage.java
-//        List<Map<String, Concept>> resources = graph.graql().match(var().rel(var().id(id)).rel(var("r").isa(var().sub(Schema.MetaSchema.RESOURCE.getName()))))
-//=======
         List<Map<String, Concept>> resources = graph.graql()
                 .match(var().rel(var().id(instance.getId())).rel(var("r").isa(var().isa("resource-type"))))
-//>>>>>>> Reliable and distributed running of background tasks:grakn-engine/src/main/java/ai/grakn/engine/backgroundtasks/taskstorage/GraknStateStorage.java
                 .select("r")
                 .execute();
 
