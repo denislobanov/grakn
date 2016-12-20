@@ -22,6 +22,8 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.*;
 import ai.grakn.test.EngineTestBase;
 import org.json.JSONObject;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,9 +44,13 @@ public class TaskManagerTest extends EngineTestBase {
     @Before
     public void setup() throws Exception {
         assumeFalse(usingTinker());
-        // Opened and closed by GraknEngineServer.startCluster()
-        manager = DistributedTaskManager.getInstance();
+        manager = DistributedTaskManager.getInstance().open();
         Thread.sleep(5000);
+    }
+
+    @After
+    public void tearDown() {
+        manager.close();
     }
 
     private void waitToFinish(String id) {
