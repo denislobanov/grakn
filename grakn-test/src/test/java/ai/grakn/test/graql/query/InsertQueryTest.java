@@ -65,11 +65,11 @@ public class InsertQueryTest extends AbstractMovieGraphTest {
     @Before
     public void setUp() {
         // TODO: Fix delete queries in titan
-        assumeFalse(usingTitan());
-
-        graph = factoryWithNewKeyspace().getGraph();
+//        assumeFalse(usingTitan());
+//
+//        graph = factoryWithNewKeyspace().getGraph();
         graph.showImplicitConcepts(true);
-        MovieGraphFactory.loadGraph(graph);
+//        MovieGraphFactory.loadGraph(graph);
 
         qb = graph.graql();
     }

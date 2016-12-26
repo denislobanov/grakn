@@ -18,6 +18,43 @@
 
 package ai.grakn.engine.backgroundtasks.distributed;
 
+import static ai.grakn.engine.backgroundtasks.TaskStatus.COMPLETED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.FAILED;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.RUNNING;
+import static ai.grakn.engine.backgroundtasks.TaskStatus.SCHEDULED;
+import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
+import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.TASK_RUNNER_GROUP;
+import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
+import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
+import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+import org.apache.curator.framework.recipes.locks.InterProcessMutex;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
+import org.apache.zookeeper.CreateMode;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import ai.grakn.engine.backgroundtasks.BackgroundTask;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
@@ -27,36 +64,6 @@ import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedState;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
 import ai.grakn.engine.util.ConfigProperties;
 import ai.grakn.engine.util.EngineID;
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.kafka.clients.consumer.*;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.WakeupException;
-import org.apache.zookeeper.CreateMode;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
-import static ai.grakn.engine.backgroundtasks.config.ConfigHelper.kafkaConsumer;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.TASK_RUNNER_GROUP;
-import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.WORK_QUEUE_TOPIC;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_LOCK_SUFFIX;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_PREFIX;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_STATE;
-import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.RUNNERS_WATCH;
-
-import static ai.grakn.engine.util.ConfigProperties.TASKRUNNER_POLLING_FREQ;
-import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
-import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.stream.Collectors.toSet;
-import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 public class TaskRunner implements Runnable, AutoCloseable {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
@@ -66,7 +73,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private final Integer allowableRunningTasks;
     private final Set<String> runningTasks = new HashSet<>();
     private final String engineID = EngineID.getInstance().id();
-    private final CountDownLatch startupLatch;
+    //private final CountDownLatch startupLatch;
     private final AtomicBoolean OPENED = new AtomicBoolean(false);
 
     private StateStorage graknStorage;
@@ -76,9 +83,9 @@ public class TaskRunner implements Runnable, AutoCloseable {
     private CountDownLatch waitToClose;
     private boolean initialised = false;
 
-    TaskRunner(CountDownLatch startupLatch) {
+    TaskRunner(/*CountDownLatch startupLatch*/) {
         allowableRunningTasks = properties.getAvailableThreads();
-        this.startupLatch = startupLatch;
+        //this.startupLatch = startupLatch;
         running = false;
     }
 
@@ -102,8 +109,10 @@ public class TaskRunner implements Runnable, AutoCloseable {
 
         }
         catch (WakeupException|InterruptedException e) {
-            LOG.debug(getFullStackTrace(e));
-            Thread.currentThread().interrupt();
+        	if (running)
+        		LOG.error("TaskRunner interrupted unexpectedly (without clearing 'running' flag first", e);
+        	else 
+        		LOG.debug("TaskRunner exiting gracefully.");
         }
         finally {
             consumer.commitSync();
@@ -127,7 +136,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
             executor = Executors.newFixedThreadPool(properties.getAvailableThreads());
 
             waitToClose = new CountDownLatch(1);
-            startupLatch.countDown();
+//            startupLatch.countDown();
             LOG.info("TaskRunner opened.");
         }
         else {
@@ -143,6 +152,7 @@ public class TaskRunner implements Runnable, AutoCloseable {
     @Override
     public void close() {
         if(OPENED.compareAndSet(true, false)) {
+        	running = false;
             noThrow(consumer::wakeup, "Could not call wakeup on Kafka Consumer.");
 
             // Wait for thread calling run() to wakeup and close consumer.

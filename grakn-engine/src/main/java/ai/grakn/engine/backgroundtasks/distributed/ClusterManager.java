@@ -47,7 +47,8 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
     private TaskRunner taskRunner;
     private Thread taskRunnerThread;
     private SynchronizedStateStorage zookeeperStorage;
-
+    private CountDownLatch leaderInitLatch = new CountDownLatch(1);
+    
     public static synchronized ClusterManager getInstance() {
         if(instance == null)
             instance = new ClusterManager();
@@ -65,10 +66,9 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
             LOG.debug("Starting Cluster manager, called by "+Thread.currentThread().getStackTrace()[1]);
 
             zookeeperStorage = SynchronizedStateStorage.getInstance();
-            CountDownLatch countDownLatch = new CountDownLatch(1);
 
             // Call close() in case there is an exception during open().
-            taskRunner = new TaskRunner(countDownLatch);
+            taskRunner = new TaskRunner();//countDownLatch);
             taskRunner.open();
             taskRunnerThread = new Thread(taskRunner);
             taskRunnerThread.start();
@@ -78,13 +78,12 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
 
             // the selection for this instance doesn't start until the leader selector is started
             // leader selection is done in the background so this call to leaderSelector.start() returns immediately
-            leaderSelector.start();
+            leaderSelector.start();            	
             while (!leaderSelector.getLeader().isLeader()) {
                 Thread.sleep(1000);
             }
-
-            // Wait for TaskRunner to start.
-            countDownLatch.await();
+            if (leaderSelector.hasLeadership())
+            	leaderInitLatch.await();
         }
         catch (Exception e) {
             LOG.error(getFullStackTrace(e));
@@ -122,13 +121,17 @@ public class ClusterManager extends LeaderSelectorListenerAdapter {
      */
     public void takeLeadership(CuratorFramework client) throws Exception {
         registerFailover(client);
-
+        
         // Call close() in case of exceptions during open()
         scheduler = new Scheduler();
         scheduler.open();
 
         LOG.info(engineID + " has taken over the scheduler.");
-        scheduler.run();
+        Thread schedulerThread = new Thread(scheduler);
+        schedulerThread.setDaemon(true);
+        schedulerThread.start();
+        leaderInitLatch.countDown();        
+        schedulerThread.join();
     }
 
     /**

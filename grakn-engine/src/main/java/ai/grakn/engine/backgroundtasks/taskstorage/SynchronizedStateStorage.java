@@ -32,6 +32,16 @@ import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASKS_PATH_P
 import static ai.grakn.engine.backgroundtasks.config.ZookeeperPaths.TASK_STATE_SUFFIX;
 import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
+/**
+ * <p>
+ * Manages the state of background {@link ai.grakn.engine.backgroundtasks.BackgroundTask} in
+ * a synchronized manner withing a cluster. This means that all updates must be performed
+ * by acquiring a distributed mutex so that no concurrent writes are possible. 
+ * </p>
+ * 
+ * @author Denis Lobanov, Alexandra Orth
+ *
+ */
 public class SynchronizedStateStorage {
     private final KafkaLogger LOG = KafkaLogger.getInstance();
     private static SynchronizedStateStorage instance = null;

@@ -32,6 +32,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
+import org.json.JSONObject;
 
 import java.util.Collections;
 import java.util.Date;
@@ -230,7 +231,13 @@ public class Scheduler implements Runnable, AutoCloseable {
         Set<Pair<String, TaskState>> tasks = stateStorage.getTasks(null, null, null, 0, 0, true);
         tasks.stream()
                 .filter(p -> p.getValue().status() != STOPPED)
-                .forEach(p -> scheduleTask(p.getKey(), p.getValue().configuration().toString(), p.getValue()));
+                .forEach(p -> {
+                	// Not sure what is the right format for "no configuration", but somehow the configuration
+                	// here for a postprocessing task is "null": if we say that the configuration of a task
+                	// is a JSONObject, then an empty configuration ought to be {}
+                	String config = p.getValue().configuration() == null ? "{}" : p.getValue().configuration().toString();
+                	scheduleTask(p.getKey(), config, p.getValue());	
+                });
         LOG.debug("Scheduler restarted " + tasks.size() + " recurring tasks");
     }
 

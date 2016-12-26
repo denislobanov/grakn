@@ -28,7 +28,6 @@ import ai.grakn.graql.internal.reasoner.query.QueryAnswers;
 import ai.grakn.test.AbstractGraknTest;
 import ai.grakn.test.graql.reasoner.graphs.GenealogyGraph;
 import com.google.common.collect.Sets;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -42,6 +41,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GenealogyTest extends AbstractGraknTest {
+
     private static GraknGraph graph;
     private static Reasoner reasoner;
     private static QueryBuilder qb;
@@ -115,10 +115,8 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $x isa person has identifier $id has gender $gender;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        Set set = Sets.newHashSet(qb.<MatchQuery>parse(queryString));
-
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
-        assertTrue(answers.contains(set) && set.contains(answers));
     }
 
     @Test
@@ -126,10 +124,8 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $x isa person, has firstname $n;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        Set set = Sets.newHashSet(qb.<MatchQuery>parse(queryString));
-
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
-        assertTrue(set.contains(answers) && answers.contains(set));
     }
 
     @Test
@@ -137,10 +133,8 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $x has identifier $i has middlename $mn;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        Set set = Sets.newHashSet(qb.<MatchQuery>parse(queryString));
-
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
-        assertTrue(answers.contains(set) && set.contains(answers));
     }
 
     @Test
@@ -148,10 +142,8 @@ public class GenealogyTest extends AbstractGraknTest {
         String queryString = "match $x isa person has surname $srn;";
         MatchQuery query = new Query(queryString, graph);
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
-        Set set = Sets.newHashSet(qb.<MatchQuery>parse(queryString));
-
+        assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
         assertTrue(!answers.isEmpty());
-        assertTrue(answers.contains(set) && set.contains(answers));
     }
 
     @Test
@@ -168,13 +160,8 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers2 = new QueryAnswers(query2.execute());
         assertTrue(!hasDuplicates(answers));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
-//<<<<<<< HEAD
-//        assertEquals(76, answers.size());
-//        assertEquals(answers, answers2);
-//=======
-        assertTrue(answers.size() == 76);
-        assertTrue(answers.contains(answers2) && answers2.contains(answers));
-//>>>>>>> debug
+        assertEquals(76, answers.size());
+        assertEquals(answers, answers2);
     }
 
     //It is expected that results are different due to how rules are defined
@@ -188,7 +175,7 @@ public class GenealogyTest extends AbstractGraknTest {
         QueryAnswers answers = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query)));
         QueryAnswers answers2 = new QueryAnswers(Sets.newHashSet(reasoner.resolveToQuery(query2)));
         answers.forEach(answer -> assertTrue(answer.size() == 2));
-        assertTrue(answers.contains(answers2) && answers2.contains(answers));
+        assertEquals(answers, answers2);
         assertEquals(answers, Sets.newHashSet(qb.<MatchQuery>parse(queryString)));
     }
 

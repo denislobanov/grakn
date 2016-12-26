@@ -20,18 +20,22 @@ package ai.grakn.engine.backgroundtasks.taskstorage;
 
 import ai.grakn.GraknGraph;
 import ai.grakn.concept.Concept;
+import ai.grakn.concept.Entity;
 import ai.grakn.concept.Instance;
 import ai.grakn.concept.Resource;
+import ai.grakn.concept.RoleType;
 import ai.grakn.engine.backgroundtasks.StateStorage;
 import ai.grakn.engine.backgroundtasks.TaskState;
 import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.distributed.KafkaLogger;
+import ai.grakn.exception.GraknBackendException;
 import ai.grakn.exception.GraknValidationException;
 import ai.grakn.exception.GraphRuntimeException;
 import ai.grakn.factory.GraphFactory;
 import ai.grakn.graql.InsertQuery;
 import ai.grakn.graql.MatchQuery;
 import ai.grakn.graql.Var;
+import ai.grakn.util.Schema;
 import javafx.util.Pair;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -73,6 +77,7 @@ public class GraknStateStorage implements StateStorage {
         Optional<String> result = attemptCommitToSystemGraph((graph) -> {
             InsertQuery query = graph.graql().insert(state);
             String id = query.stream()
+            		.filter(concept -> concept.isEntity())
                     .filter(concept -> concept.asInstance().type().getName().equals(SCHEDULED_TASK))
                     .findFirst().get().getId();
 
@@ -94,55 +99,54 @@ public class GraknStateStorage implements StateStorage {
             return false;
 
         // Existing resource relations to remove
-        Var deleters = var(TASK_VAR);
-
+        final Set<String> resourcesToDettach = new HashSet<String>();
+        
         // New resources to add
         Var resources = var(TASK_VAR).id(id);
 
         if(status != null) {
-            deleters.has(STATUS)
-                    .has(STATUS_CHANGE_TIME);
+        	resourcesToDettach.add(STATUS);
+        	resourcesToDettach.add(STATUS_CHANGE_TIME);
             resources.has(STATUS, status.toString())
                      .has(STATUS_CHANGE_TIME, new Date().getTime());
         }
         if(statusChangeBy != null) {
-            deleters.has(STATUS_CHANGE_BY);
+            resourcesToDettach.add(STATUS_CHANGE_BY);            
             resources.has(STATUS_CHANGE_BY, statusChangeBy);
         }
         if(engineID != null) {
-            deleters.has(ENGINE_ID);
+        	resourcesToDettach.add(ENGINE_ID);        	
             resources.has(ENGINE_ID, engineID);
         }
         if(failure != null) {
-            deleters.has(TASK_EXCEPTION)
-                    .has(STACK_TRACE);
-
+            resourcesToDettach.add(TASK_EXCEPTION);
+            resourcesToDettach.add(STACK_TRACE);            
             resources.has(TASK_EXCEPTION, failure.toString());
             if(failure.getStackTrace().length > 0)
                  resources.has(STACK_TRACE, Arrays.toString(failure.getStackTrace()));
         }
         if(checkpoint != null) {
-            deleters.has(TASK_CHECKPOINT);
+        	resourcesToDettach.add(TASK_CHECKPOINT);        	
             resources.has(TASK_CHECKPOINT, checkpoint);
         }
         if(configuration != null) {
-            deleters.has(TASK_CONFIGURATION);
+            resourcesToDettach.add(TASK_CONFIGURATION);            
             resources.has(TASK_CONFIGURATION, configuration.toString());
         }
 
         Optional<Boolean> result = attemptCommitToSystemGraph((graph) -> {
-            LOG.debug("deleting: " + deleters);
+            LOG.debug("dettaching: " + resourcesToDettach);
             LOG.debug("inserting " + resources);
-
-            // Remove relations to any resources we want to currently update
-            graph.graql().match(var(TASK_VAR).id(id))
-                    .delete(deleters)
-                    .execute();
-
+            final Entity task = (Entity)graph.getConcept(id);
+            // Remove relations to any resources we want to currently update 
+            resourcesToDettach.forEach(typeName -> {
+                RoleType roleType = graph.getRoleType(Schema.Resource.HAS_RESOURCE_OWNER.getName(typeName));
+                if (roleType == null)
+                	System.err.println("NO ROLE TYPE FOR RESOURCE " + typeName);
+            	task.relations(roleType).forEach(Concept::delete);            
+            });
             // Insert new resources with new values
-            graph.graql().insert(resources)
-                    .execute();
-
+            graph.graql().insert(resources).execute();
             return true;
         }, true);
 
@@ -171,7 +175,7 @@ public class GraknStateStorage implements StateStorage {
         TaskState state = new TaskState(name.getValue().toString());
 
         List<Map<String, Concept>> resources = graph.graql()
-                .match(var().rel(var().id(instance.getId())).rel(var("r").isa(var().isa("resource-type"))))
+                .match(var().rel(var().id(instance.getId())).rel(var("r").isa(var().sub("resource"))))
                 .select("r")
                 .execute();
 
@@ -293,16 +297,16 @@ public class GraknStateStorage implements StateStorage {
                 }
 
                 return Optional.of(result);
-            } catch (GraknValidationException e) {
+            } 
+            catch (GraknBackendException e) {
+            	// retry...
+            }            
+            catch (Throwable e) {
+            	e.printStackTrace(System.err);
                 LOG.error("Failed to validate the graph when updating the state " + getFullStackTrace(e));
-            } catch (GraphRuntimeException e) {
-                LOG.debug("Graph is closed - attempting with new graph");
-            } catch (RuntimeException e) {
-                LOG.debug("Failed committing " + i);
-                if (i == retries - 1) {
-                    LOG.error(getFullStackTrace(e));
-                }
-            } finally {
+                break;
+            } 
+            finally {
                 LOG.debug("Took " + (System.currentTimeMillis() - time) + " to " + (commit ? "commit" : "query") + " to system graph @ t" + Thread.currentThread().getId());
             }
 

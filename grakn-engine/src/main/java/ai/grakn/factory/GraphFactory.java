@@ -49,6 +49,10 @@ public class GraphFactory {
         }
     }
 
+    public Properties configurationProperties() {
+    	return this.properties;
+    }
+    
     public synchronized GraknGraph getGraph(String keyspace) {
         return FactoryBuilder.getFactory(keyspace, null, properties).getGraph(false);
     }

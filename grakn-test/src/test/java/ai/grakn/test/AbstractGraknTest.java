@@ -19,12 +19,14 @@
 package ai.grakn.test;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
-import static ai.grakn.test.GraknTestEnv.startGraph;
-import static ai.grakn.test.GraknTestEnv.stopGraph;
+import static ai.grakn.test.GraknTestEnv.ensureEngineRunning;
+import static ai.grakn.test.GraknTestEnv.shutdownEngine;
 import static java.lang.Thread.sleep;
 
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
+import ai.grakn.test.TrapSystemExit;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -33,16 +35,39 @@ import org.junit.BeforeClass;
  */
 public abstract class AbstractGraknTest {
 	
+	static {
+        if (Boolean.getBoolean("trapSystemExit"))
+	       TrapSystemExit.ensureSystemExitTrap();		
+	}
+	
     @BeforeClass
-    public static void initializeGraknTests() throws Exception {
-        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, StandaloneTaskManager.class.getName());
-    	startGraph();
-        sleep(5000);
+    public static void initializeGraknTests() {
+    	try {
+	        ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, StandaloneTaskManager.class.getName());
+	    	ensureEngineRunning();
+	        sleep(5000);
+    	}
+    	catch (Exception e) {
+    		e.printStackTrace(System.err);
+    		throw new RuntimeException(e);
+    	}
     }
 
     @AfterClass
-    public static void cleanupGraknTests() throws Exception {
-    	stopGraph();
-        sleep(5000);
+    public static void cleanupGraknTests() {
+    	try {
+    		// TODO: clearing all graphs was added to the Engine tests with idea of starting
+    		// each test with  a clean slate. However, a lot of test in various classes assume
+    		// the presence of some graphs created and populated once per JVM execution (e.g.
+    		// movie graph reference held in a static variable). The approach is obviously not ideal,
+    		// akin to using global variables in a large program...a "no no"
+//    		clearGraphs();
+	    	shutdownEngine();
+	        sleep(5000);
+    	}
+    	catch (Exception e) {
+    		e.printStackTrace(System.err);
+    		throw new RuntimeException(e);
+    	}
     }
 }

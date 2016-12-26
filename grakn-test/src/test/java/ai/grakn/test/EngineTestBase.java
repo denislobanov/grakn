@@ -19,6 +19,7 @@
 package ai.grakn.test;
 
 import ai.grakn.GraknGraph;
+
 import ai.grakn.engine.GraknEngineServer;
 import ai.grakn.engine.backgroundtasks.distributed.ClusterManager;
 import ai.grakn.engine.backgroundtasks.distributed.DistributedTaskManager;
@@ -32,6 +33,7 @@ import ai.grakn.factory.GraphFactory;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import com.auth0.jwt.internal.org.apache.commons.io.FileUtils;
+import com.esotericsoftware.minlog.Log;
 import com.jayway.restassured.RestAssured;
 import info.batey.kafka.unit.KafkaUnit;
 import org.apache.commons.io.IOUtils;
@@ -44,10 +46,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 import static ai.grakn.engine.util.ConfigProperties.TASK_MANAGER_INSTANCE;
+import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
 import static java.lang.Thread.sleep;
 import static ai.grakn.test.GraknTestEnv.*;
 
@@ -58,27 +62,33 @@ public class EngineTestBase {
     private static Path tempDirectory;
 
     @BeforeClass
-    public static void startTestEngine() throws Exception {
-        if(ENGINE_ON.compareAndSet(false, true)) {
-            System.out.println("STARTING ENGINE...");
-
-            hideLogs();
-            startEngine();
-            RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
-
-            System.out.println("STARTED ENGINE.");
-        }
+    public static void startTestEngine() {
+    	try {
+	        if(ENGINE_ON.compareAndSet(false, true)) {
+	            System.out.println("STARTING ENGINE...");
+	
+	            hideLogs();
+	            startEngineImpl();
+	            RestAssured.baseURI = "http://" + properties.getProperty("server.host") + ":" + properties.getProperty("server.port");
+	
+	            System.out.println("STARTED ENGINE.");
+	        }
+    	}
+    	catch (Exception ex) {
+    		ex.printStackTrace(System.err);
+    		Log.error("While starting Engine for test", ex);
+    	}
     }
 
-    private static void startEngine() throws Exception {
+    private static void startEngineImpl() throws Exception {
         kafkaUnit = new KafkaUnit(2181, 9092);
-
-        tempDirectory = Files.createTempDirectory("graknKafkaUnit");
+        
+        tempDirectory = Files.createTempDirectory("graknKafkaUnit " + UUID.randomUUID());
         kafkaUnit.setKafkaBrokerConfig("log.dirs", tempDirectory.toString());
         kafkaUnit.startup();
 
         ConfigProperties.getInstance().setConfigProperty(TASK_MANAGER_INSTANCE, DistributedTaskManager.class.getName());
-        startGraph();
+        ensureEngineRunning();
 
         GraknEngineServer.startCluster();
         sleep(5000);
@@ -89,9 +99,10 @@ public class EngineTestBase {
         if(ENGINE_ON.compareAndSet(true, false)) {
             System.out.println("STOPPING ENGINE...");
 
-            GraknEngineServer.stopCluster();
-            kafkaUnit.shutdown();
-            stopGraph();
+            noThrow(GraknEngineServer::stopCluster, "Problem while shutting down Zookeeper cluster.");            
+            noThrow(kafkaUnit::shutdown, "Problem while shutting down Kafka Unit.");
+            noThrow(GraknTestEnv::clearGraphs, "Problem while clearing graphs.");
+            noThrow(GraknTestEnv::shutdownEngine, "Problem while shutting down Engine");
 
             sleep(5000);
             FileUtils.deleteDirectory(tempDirectory.toFile());

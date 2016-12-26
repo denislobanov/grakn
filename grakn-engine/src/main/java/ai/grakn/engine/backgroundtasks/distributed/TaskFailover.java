@@ -80,7 +80,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
 
     @Override
     public void close() {
-        if(OPENED.compareAndSet(false, true)) {
+        if(OPENED.compareAndSet(true, false)) {
             noThrow(producer::flush, "Could not flush Kafka Producer.");
             noThrow(producer::close, "Could not close Kafka Producer.");
 

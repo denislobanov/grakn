@@ -1,5 +1,6 @@
 package ai.grakn.test;
 
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -14,6 +15,7 @@ import ai.grakn.GraknGraphFactory;
 import ai.grakn.engine.GraknEngineServer;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import jline.internal.Log;
 
 import static ai.grakn.graql.Graql.var;
 
@@ -30,44 +32,64 @@ public interface GraknTestEnv {
     static final String CONFIG = System.getProperty("grakn.test-profile");
     static AtomicBoolean CASSANDRA_RUNNING = new AtomicBoolean(false);
     static AtomicBoolean HTTP_RUNNING = new AtomicBoolean(false);
-
-    static void hideLogs() {
+    
+    public static void hideLogs() {
         Logger logger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         logger.setLevel(Level.OFF);
     }
 
-    static void startGraph() throws Exception {
+    public static void ensureEngineRunning() throws Exception {
+    	// To ensure consistency b/w test profiles and configuration files, when not using Titan
+    	// for a unit tests in an IDE, add the following option:
+    	// -Dgrakn.conf=../conf/test/tinker/grakn-engine.properties
+    	//
+    	// When using titan, add -Dgrakn.test-profile=titan
+    	//
+    	// The reason is that the default configuration of Grakn uses the Titan factory while the default
+    	// test profile is tinker: so when running a unit test within an IDE without any extra parameters,
+    	// we end up wanting to use the TitanFactory but without starting Cassandra first.
+    	
+//        System.setProperty(ConfigProperties.CONFIG_FILE_SYSTEM_PROPERTY, ConfigProperties.TEST_CONFIG_FILE);
+    	
         if (CASSANDRA_RUNNING.compareAndSet(false, true) && usingTitan()) {
             startEmbeddedCassandra();
             System.out.println("CASSANDRA RUNNING.");
         }
-
-        if(HTTP_RUNNING.compareAndSet(false, true))
+        
+        if(HTTP_RUNNING.compareAndSet(false, true)) {
             GraknEngineServer.startHTTP();
-    }
-
-    static void stopGraph() throws Exception {
-        if(HTTP_RUNNING.compareAndSet(true, false)) {
-            // Drop all keyspaces
-            GraknGraph systemGraph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
-            systemGraph.graql().match(var("x").isa("keyspace-name"))
-                    .execute()
-                    .forEach(x -> x.values().forEach(y -> {
-                        String name = y.asResource().getValue().toString();
-                        GraknGraph graph = GraphFactory.getInstance().getGraph(name);
-                        graph.clear();
-                        System.out.println("Cleared " + name);
-                    }));
-
-            // Drop the system keyspaces too, and re-create it for the next run.
-            systemGraph.clear();
-            //String config = ConfigProperties.getInstance().getPath(ConfigProperties.GRAPH_CONFIG_PROPERTY);
-            new SystemKeyspace(null, ConfigProperties.getInstance().getProperties()).loadSystemOntology();
-            GraknEngineServer.stopHTTP();
+            Properties properties = GraphFactory.getInstance().configurationProperties();           
+            new SystemKeyspace(null, properties).loadSystemOntology();
         }
     }
 
-    static GraknGraphFactory factoryWithNewKeyspace() {
+    public static void clearGraphs() {
+        // Drop all keyspaces
+        GraknGraph systemGraph = GraphFactory.getInstance().getGraph(ConfigProperties.SYSTEM_GRAPH_NAME);
+        systemGraph.graql().match(var("x").isa("keyspace-name"))
+                .execute()
+                .forEach(x -> x.values().forEach(y -> {
+                    String name = y.asResource().getValue().toString();
+                    GraknGraph graph = GraphFactory.getInstance().getGraph(name);
+                    graph.clear();
+                }));
+
+        // Drop the system keyspaces too
+        systemGraph.clear();  	
+    }
+    
+    public static void shutdownEngine()  {
+        if(HTTP_RUNNING.compareAndSet(true, false)) {
+            GraknEngineServer.stopHTTP();
+            // The Spark framework we are using kicks off a shutdown process in a separate
+            // thread and there is not way to detect when it is finished. The only option
+            // we have is to "wait a while" (Boris).
+            try {Thread.sleep(5000);} catch(InterruptedException ex) { Log.info("Thread sleep interrupted."); }
+        }
+        // There is no way to stop the embedded Casssandra, no such API offered.
+    }
+
+    public static GraknGraphFactory factoryWithNewKeyspace() {
         String keyspace;
         if (usingOrientDB()) {
             keyspace = "memory";
@@ -78,7 +100,7 @@ public interface GraknTestEnv {
         return Grakn.factory(Grakn.DEFAULT_URI, keyspace);
     }
 
-    static void startEmbeddedCassandra() {
+    public static void startEmbeddedCassandra() {
         try {
             // We have to use reflection here because the cassandra dependency is only included when testing the titan profile.
             Class cl = Class.forName("org.cassandraunit.utils.EmbeddedCassandraServerHelper");
@@ -93,15 +115,15 @@ public interface GraknTestEnv {
         }
     }
 
-    static boolean usingTinker() {
+    public static boolean usingTinker() {
         return "tinker".equals(CONFIG);
     }
 
-    static boolean usingTitan() {
+    public static boolean usingTitan() {
         return "titan".equals(CONFIG);
     }
 
-    static boolean usingOrientDB() {
+    public static boolean usingOrientDB() {
         return "orientdb".equals(CONFIG);
     }
 }
