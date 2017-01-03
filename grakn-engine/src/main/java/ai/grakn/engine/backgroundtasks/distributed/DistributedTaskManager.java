@@ -25,7 +25,9 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import ai.grakn.engine.backgroundtasks.config.ConfigHelper;
 import ai.grakn.engine.backgroundtasks.taskstorage.GraknStateStorage;
 import ai.grakn.engine.backgroundtasks.taskstorage.SynchronizedStateStorage;
+import ai.grakn.engine.util.EngineID;
 import ai.grakn.engine.util.ExceptionWrapper;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.json.JSONObject;
@@ -39,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static ai.grakn.engine.backgroundtasks.TaskStatus.*;
 import static ai.grakn.engine.backgroundtasks.config.KafkaTerms.NEW_TASKS_TOPIC;
 import static ai.grakn.engine.util.ExceptionWrapper.noThrow;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
 
 /**
  * Class to manage tasks distributed using Kafka.
@@ -95,10 +98,17 @@ public class DistributedTaskManager implements TaskManager{
         Boolean recurring = period > 0;
 
         String id = stateStorage.newState(task.getClass().getName(), createdBy, runAt, recurring, period, configuration);
-        zkStorage.newState(id, CREATED, null, null);
+        try {
+            zkStorage.newState(id, CREATED, null, null);
 
-        producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, id, configuration.toString()));
-        producer.flush();
+            producer.send(new ProducerRecord<>(NEW_TASKS_TOPIC, id, configuration.toString()));
+            producer.flush();
+        }
+        catch (Exception e) {
+            LOG.error("Could not write to ZooKeeper! - "+ getFullStackTrace(e));
+            stateStorage.updateState(id, FAILED, this.getClass().getName(), EngineID.getInstance().id(), e, null, null);
+            id = null;
+        }
 
         return id;
     }

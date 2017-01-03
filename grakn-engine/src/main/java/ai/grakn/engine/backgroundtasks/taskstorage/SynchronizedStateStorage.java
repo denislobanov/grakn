@@ -68,12 +68,12 @@ public class SynchronizedStateStorage {
         return zookeeperConnection;
     }
 
-    public void close(){
+    public void close() {
         zookeeperConnection.close();
         instance = null;
     }
 
-    public void newState(String id, TaskStatus status, String engineID, String checkpoint) {
+    public void newState(String id, TaskStatus status, String engineID, String checkpoint) throws Exception {
         if(id == null || status == null)
             return;
 
@@ -84,14 +84,9 @@ public class SynchronizedStateStorage {
         if(checkpoint != null)
             state.checkpoint(checkpoint);
 
-        try {
-            zookeeperConnection.create()
-                  .creatingParentContainersIfNeeded()
-                  .forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes());
-        }
-        catch (Exception e) {
-            System.out.println(this.getClass().getName() + " Could not write to ZooKeeper! " + e);
-        }
+        zookeeperConnection.create()
+              .creatingParentContainersIfNeeded()
+              .forPath(TASKS_PATH_PREFIX+"/"+id+TASK_STATE_SUFFIX, state.serialize().getBytes());
     }
 
     public Boolean updateState(String id, TaskStatus status, String engineID, String checkpoint) {

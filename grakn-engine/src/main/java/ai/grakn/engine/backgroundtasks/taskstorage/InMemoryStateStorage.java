@@ -24,13 +24,14 @@ import ai.grakn.engine.backgroundtasks.TaskStatus;
 import javafx.util.Pair;
 import org.json.JSONObject;
 
+import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class InMemoryStateStorage implements StateStorage {
     private static InMemoryStateStorage instance = null;
 
-    private Map<String, TaskState> storage;
+    private Map<String, SoftReference<TaskState>> storage;
 
     private InMemoryStateStorage() {
         storage = new ConcurrentHashMap<>();
@@ -58,7 +59,7 @@ public class InMemoryStateStorage implements StateStorage {
             state.configuration(new JSONObject());
 
         String id = UUID.randomUUID().toString();
-        storage.put(id, state);
+        storage.put(id, new SoftReference<>(state));
 
         return id;
     }
@@ -72,7 +73,7 @@ public class InMemoryStateStorage implements StateStorage {
                 && checkpoint == null && configuration == null)
             return false;
 
-        TaskState state = storage.get(id);
+        TaskState state = storage.get(id).get();
         synchronized (state) {
             state.status(status);
 
@@ -96,7 +97,7 @@ public class InMemoryStateStorage implements StateStorage {
         if(id == null || !storage.containsKey(id))
             return null;
 
-        TaskState state = storage.get(id);
+        TaskState state = storage.get(id).get();
         TaskState newState = null;
 
         synchronized (state) {
@@ -114,8 +115,10 @@ public class InMemoryStateStorage implements StateStorage {
         Set<Pair<String, TaskState>> res = new HashSet<>();
 
         int count = 0;
-        for(Map.Entry<String, TaskState> x: storage.entrySet()) {
-            TaskState state = x.getValue();
+        for(Map.Entry<String, SoftReference<TaskState>> x: storage.entrySet()) {
+            TaskState state = x.getValue().get();
+            if(state == null)
+                continue;
 
             // AND
             if(taskStatus != null && state.status() != taskStatus)

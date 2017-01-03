@@ -116,9 +116,8 @@ public class TasksController {
         if(request.queryParams(OFFSET_PARAM) != null)
             offset = Integer.valueOf(request.queryParams(OFFSET_PARAM));
 
-        if(request.queryParams(TASK_STATUS_PARAMETER) != null) {
+        if(request.queryParams(TASK_STATUS_PARAMETER) != null)
             status = TaskStatus.valueOf(request.queryParams(TASK_STATUS_PARAMETER));
-        }
 
         JSONArray result = new JSONArray();
         for (Pair<String, TaskState> pair : stateStorage.getTasks(status, className, creator, limit, offset)) {
@@ -154,7 +153,8 @@ public class TasksController {
             String id = request.params(ID_PARAMETER);
             taskManager.stopTask(id, this.getClass().getName());
             return "";
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new GraknEngineServerException(500, e);
         }
     }

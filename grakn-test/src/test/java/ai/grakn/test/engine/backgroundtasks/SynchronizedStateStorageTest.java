@@ -39,7 +39,7 @@ public class SynchronizedStateStorageTest extends EngineTestBase {
     }
 
     @Test
-    public void testStoreRetrieve() {
+    public void testStoreRetrieve() throws Exception {
         String id = UUID.randomUUID().toString();
         String engineID = UUID.randomUUID().toString();
         String checkpoint = "test checkpoint";
@@ -55,7 +55,7 @@ public class SynchronizedStateStorageTest extends EngineTestBase {
     }
 
     @Test
-    public void testStoreWithPartial() {
+    public void testStoreWithPartial() throws Exception {
         String id = UUID.randomUUID().toString();
         stateStorage.newState(id, CREATED, null, null);
 
@@ -66,7 +66,7 @@ public class SynchronizedStateStorageTest extends EngineTestBase {
     }
 
     @Test
-    public void testUpdate() {
+    public void testUpdate() throws Exception {
         String id = UUID.randomUUID().toString();
         String engineID = UUID.randomUUID().toString();
         String checkpoint = "test checkpoint";
@@ -87,7 +87,7 @@ public class SynchronizedStateStorageTest extends EngineTestBase {
     }
 
     @Test
-    public void testUpdateInvalid() {
+    public void testUpdateInvalid() throws Exception {
         String id = UUID.randomUUID().toString();
         String engineID = UUID.randomUUID().toString();
         String checkpoint = "test checkpoint";

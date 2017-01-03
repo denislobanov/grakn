@@ -157,7 +157,7 @@ public class SchedulerTest extends EngineTestBase {
         return tasks;
     }
 
-    private Pair<String, TaskState> createTask(int i, TaskStatus status, boolean recurring, int interval) {
+    private Pair<String, TaskState> createTask(int i, TaskStatus status, boolean recurring, int interval) throws Exception {
         String taskId = stateStorage.newState(
                 TestTask.class.getName(),
                 SchedulerTest.class.getName(),

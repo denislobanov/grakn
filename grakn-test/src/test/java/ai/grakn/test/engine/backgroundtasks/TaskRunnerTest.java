@@ -99,7 +99,7 @@ public class TaskRunnerTest extends EngineTestBase {
     /**
      * Precompute states so that they can later be sent quickly
      */
-    private Collection<Pair<String, TaskState>> precomputeStates(int count, TaskStatus status){
+    private Collection<Pair<String, TaskState>> precomputeStates(int count, TaskStatus status) throws Exception {
         Collection<Pair<String, TaskState>> states = new HashSet<>();
 
         for (int i = 0; i < count; i++) {

@@ -86,6 +86,7 @@ public class TaskFailover implements TreeCacheListener, AutoCloseable {
 
             current = null;
             stateStorage = null;
+            synchronizedStateStorage = null;
         }
         else {
             LOG.error("TaskFailover close() called before open().");

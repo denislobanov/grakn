@@ -25,7 +25,6 @@ import static java.lang.Thread.sleep;
 
 import ai.grakn.engine.backgroundtasks.standalone.StandaloneTaskManager;
 import ai.grakn.engine.util.ConfigProperties;
-import ai.grakn.test.TrapSystemExit;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -34,11 +33,6 @@ import org.junit.BeforeClass;
  * Abstract test class that automatically starts the relevant graph database and provides a method to get a graph factory
  */
 public abstract class AbstractGraknTest {
-	
-	static {
-        if (Boolean.getBoolean("trapSystemExit"))
-	       TrapSystemExit.ensureSystemExitTrap();		
-	}
 	
     @BeforeClass
     public static void initializeGraknTests() {
